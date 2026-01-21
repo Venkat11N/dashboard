@@ -1,43 +1,27 @@
-import {
-  FileText,
-  ShieldAlert,
-  BookOpen,
-  GraduationCap,
-} from "lucide-react";
-
-import { UserRole } from "../types/role";
-import Sidebar from '../components/layout/Sidebar';
+import type { Module } from "../rbac/permissions";
 
 export interface SidebarItem {
   label: string;
   path: string;
-  icon: any;
-  roles: UserRole[];
+  module: Module;
+  children?: SidebarItem[];
 }
 
-export const sidebarMenu: SidebarItem[] = [
-  {
-    label: "Grievacne Redressal",
-    path: "/dashbaord/grievance",
-    icon: FileText,
-    roles: ["SEAFARER", "ORGANIZATION_USER", "ADMIN"],
-  },
-  {
-    label: "MTI",
-    path: "/dashbaord/mti",
-    icon: GraduationCap,
-    roles: ["ORGANIZATION_USER", "ADMIN"],
-  },
-  {
-    label: "Crisis Reponse",
-    path: "/dashbaord/crisis",
-    icon: ShieldAlert,
-    roles: ["ADMIN"],
-  },
-  {
-    label: "RPSL",
-    path: "/dashboard/rpsl",
-    icon: BookOpen,
-    roles: ["ADMIN"]
-  },
+export const SIDEBAR_ITEMS: SidebarItem[] = [
+
+{
+  label: "Application Status",
+  path: "/dashbaord/application-status",
+  module: "GRIEVANCES",
+},
+{
+  label: "Replies",
+  path: "/dashbaord/replies",
+  module: "GRIEVANCES"
+},
+{
+  label: "FAQ",
+  path: "/dashbaord/faq",
+  module: "GRIEVANCES",
+}
 ];
