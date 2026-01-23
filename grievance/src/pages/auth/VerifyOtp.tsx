@@ -1,119 +1,86 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
-import { generateOtp } from "../../utils/otp";
-import { hashValue } from "../../utils/hash";
-
 
 export default function VerifyOtp() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const email = location.state?.email;
+
   const [otp, setOtp] = useState("");
   const [status, setStatus] = useState<"idle" | "error" | "success">("idle");
+  const [errorMsg, setErrorMsg] = useState("");
 
-async function verifyOtp() {
-  setStatus("idle");
+  async function verifyOtp() {
+    if (!email) {
+      setErrorMsg("Session expired. Please log in again.");
+      return;
+    }
+    
+    setStatus("idle");
+    setErrorMsg("");
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
-  if (!user) {
-    setStatus("error");
-    return;
+    const { error } = await supabase.auth.verifyOtp({
+      email: email,
+      token: otp,
+      type: 'email', 
+    });
+
+    if (error) {
+      setErrorMsg(error.message);
+      setStatus("error");
+      return;
+    }
+
+
+    sessionStorage.setItem("otp_verified", "true");
+    setStatus("success");
+    setTimeout(() => navigate("/dashboard"), 500);
   }
 
-  const otpHash = await hashValue(otp);
-
-  const { data, error } = await supabase
-    .from("email_otps")
-    .select("*")
-    .eq("user_id", user.id)
-    .eq("otp_hash", otpHash)
-    .eq("is_used", false)
-    .gt("expires_at", new Date().toISOString())
-    .single();
-
-  if (error || !data) {
-    setStatus("error");
-    return;
+  async function resendOtp() {
+    if (!email) return;
+    const { error } = await supabase.auth.signInWithOtp({ email });
+    if (error) {
+      setErrorMsg(error.message);
+    } else {
+      alert("A new 6-digit code has been sent!");
+    }
   }
-
-  await supabase
-    .from("email_otps")
-    .update({ is_used: true })
-    .eq("id", data.id);
-
-  sessionStorage.setItem("otp_verified", "true");
-
-  setStatus("success");
-
-  setTimeout(() => {
-    navigate("/dashboard"); // COMMON HOME
-  }, 600);
-}
-
-
-async function resendOtp() {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return;
-
-  const otp = generateOtp();
-  const otpHash = await hashValue(otp);
-
-  await supabase.from("email_otps").insert({
-    user_id: user.id,
-    otp_hash: otpHash,
-    expires_at: new Date(Date.now() + 5 * 60 * 1000),
-  });
-
-  console.log("Resent OTP:", otp);
-}
-
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-6 rounded shadow w-96">
-        <h1 className="text-xl font-semibold mb-4">
-          OTP Verification
-        </h1>
+    <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="bg-white p-8 rounded-2xl shadow-xl w-96 border border-gray-100">
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Security Code</h1>
+        <p className="text-sm text-gray-500 mb-6">Sent to {email}</p>
 
-        <p className="text-sm text-gray-600 mb-3">
-          Enter the OTP sent to your registered email
-        </p>
+        {errorMsg && <p className="text-xs text-red-500 mb-4">{errorMsg}</p>}
 
-        <div className="flex gap-2">
-
+        <div className="space-y-4">
           <input
             type="text"
+            maxLength={6}
+            placeholder="000000"
             value={otp}
             onChange={(e) => setOtp(e.target.value)}
-            className={`flex-1 border p-2 rounded
-              ${
-                status === "error"
-                  ? "border-red-500"
-                  : status === "success"
-                  ? "border-green-500"
-                  : ""
-              }`}
+            className={`w-full border-2 p-4 rounded-xl text-center text-2xl font-mono tracking-[0.5em] focus:border-blue-500 outline-none ${
+              status === "error" ? "border-red-300 bg-red-50" : "border-gray-100"
+            }`}
           />
 
           <button
             onClick={verifyOtp}
-            className={`px-4 rounded text-white
-              ${
-                status === "success"
-                  ? "bg-green-600"
-                  : "bg-blue-600"
-              }`}
+            className={`w-full py-3 rounded-xl text-white font-bold transition-all ${
+              status === "success" ? "bg-green-600" : "bg-blue-600 hover:bg-blue-700"
+            }`}
           >
-            Verify
+            {status === "success" ? "Success!" : "Verify Code"}
           </button>
         </div>
 
-        <button onClick={resendOtp} className="text-sm text-blue-600 mt-3">
-          Resend OTP
+        <button onClick={resendOtp} className="text-sm text-blue-600 mt-6 w-full text-center hover:underline">
+          Didn't receive a code? Resend
         </button>
       </div>
     </div>

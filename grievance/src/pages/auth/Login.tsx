@@ -1,12 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
-import { generateOtp } from "../../utils/otp";
-import { hashValue } from "../../utils/hash";
 
 export default function Login() {
   const navigate = useNavigate();
-  const [userId, setUserId] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -16,73 +14,74 @@ export default function Login() {
     setError("");
     setLoading(true);
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email : userId,
-      password,
-    });
-
-    if(error) {
-      setLoading(false);
-      setError(error.message);
-      return;
-    }
-
-    if (data.user) {
-      const otp = generateOtp();
-      const otpHash = await hashValue(otp);
-
-      await supabase.from("email_otps").insert({
-        user_id: data.user.id,
-        otp_hash: otpHash,
-        expires_at: new Date(Date.now() + 5 * 60 * 1000),
+    try {
+      // 1. Verify Password First
+      const { error: passwordError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password.trim(),
       });
 
-      console.log("OTP (for testing):", otp);
-    }
+      if (passwordError) {
+        setError(passwordError.message);
+        return;
+      }
 
-    setLoading(false);
-    navigate("/verify-otp");
+      // 2. If password is correct, send the 6-digit OTP
+      const { error: otpError } = await supabase.auth.signInWithOtp({
+        email: email.trim(),
+      });
+
+      if (otpError) {
+        setError("Password verified, but failed to send security code.");
+        return;
+      }
+
+      // 3. Move to verification screen
+      navigate("/verify-otp", { state: { email: email.trim() } });
+
+    } catch (err) {
+      setError("An unexpected error occurred.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-green-100">
-      <form
-        onSubmit={handleLogin}
-        className="bg-white p-6 rounded shadow w-96"
-      >
-        <h1 className="text-xl font-semibold mb-4">
-          Login
-        </h1>
+    <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <form onSubmit={handleLogin} className="bg-white p-8 rounded-2xl shadow-xl w-96 border border-gray-100">
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold text-gray-900">Sign In</h1>
+          <p className="text-sm text-gray-500 mt-2">Enter credentials to receive code</p>
+        </div>
 
-        {error && (
-          <p className="text-sm text-red-600 mb-2">{error}</p>
-        )}
-        
-        <input
-          type="text"
-          placeholder="User ID"
-          className="w-full border p-2 rounded mb-3"
-          value={userId}
-          onChange={(e) => setUserId(e.target.value)}
-          required
-        />
+        {error && <p className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4 border border-red-100">{error}</p>}
 
-        <input
-          type="password"
-          placeholder="Password"
-          className="w-full border p-2 rounded mb-4"
-          value={password}
-          onChange={(e)=> setPassword(e.target.value)}
-          required
-        />
+        <div className="space-y-4">
+          <input
+            type="email"
+            placeholder="Email Address"
+            className="w-full border p-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            className="w-full border p-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </div>
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-blue-600 text-white py-2 rounded"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl mt-6 transition-all disabled:opacity-50"
         >
-          {loading ? "Logging in..." : "Login"}
-        </button>  
+          {loading ? "Verifying..." : "Continue to OTP"}
+        </button>
       </form>
     </div>
   );

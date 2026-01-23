@@ -1,7 +1,7 @@
 import { createContext, useContext, ReactNode } from "react";
 
 
-export type DashboardRole = "CIPHERED_USER" | "ADMIN";
+export type DashboardRole = "USER" | "ADMIN";
 
 interface DashboardContextType {
   role: DashboardRole;
@@ -20,7 +20,7 @@ const DashboardContext = createContext<DashboardContextType | null>(null);
 export function DashboardProvider({ children }: { children: ReactNode }) {
 
   const value: DashboardContextType = {
-    role: "User",
+    role: "USER",
     subscriptions: {
       preventive: false,
       grievance: true,

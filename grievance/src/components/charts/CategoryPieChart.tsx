@@ -1,50 +1,25 @@
-import { useEffect, useState } from "react";
-import { Pie } from "react-chartjs-2";
-import { supabase } from "../../lib/supabase";
-import { CURRENT_USER } from "../../lib/currentUser";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
-import {
-  Chart as ChartJS,
-  ArcElement,
-  Tooltip,
-  Legend,
-} from "chart.js";
-ChartJS.register(ArcElement, Tooltip, Legend);
+const data = [
+  { name: 'Pending', value: 400 },
+  { name: 'Resolved', value: 300 },
+  { name: 'In Progress', value: 300 },
+];
+
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b']; // Modern Tailwind palette
 
 export default function CategoryPieChart() {
-  const [rows, setRows] = useState([]);
-
-  useEffect(() => {
-    async function load() {
-      const { data } = await supabase.rpc(
-        "grievance_count_by_category",
-        { uid: CURRENT_USER.id }
-      );
-      if (data) setRows(data);
-    }
-    load();
-  }, []);
-
-  const labels = rows.map((r: any) => r.category);
-  const values = rows.map((r: any) => r.total);
-
   return (
-    <div className="bg-white p-6 rounded shadow">
-      <h2 className="font-semibold mb-4">
-        Grievance by Category
-      </h2>
-
-      <Pie
-        data={{
-          labels,
-          datasets: [
-            {
-              data: values,
-              backgroundColor: ["#1d4ed8", "#9333ea", "#16a34a", "#dc2626"],
-            },
-          ],
-        }}
-      />
-    </div>
+    <ResponsiveContainer width="100%" height={300}>
+      <PieChart>
+        <Pie data={data} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+          {data.map((_, index) => (
+            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+          ))}
+        </Pie>
+        <Tooltip />
+        <Legend verticalAlign="bottom" height={36}/>
+      </PieChart>
+    </ResponsiveContainer>
   );
 }
