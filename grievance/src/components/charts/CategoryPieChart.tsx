@@ -6,7 +6,7 @@ const data = [
   { name: 'In Progress', value: 300 },
 ];
 
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b']; // Modern Tailwind palette
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b']; 
 
 export default function CategoryPieChart() {
   return (
@@ -23,3 +23,4 @@ export default function CategoryPieChart() {
     </ResponsiveContainer>
   );
 }
+

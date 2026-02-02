@@ -3,6 +3,7 @@ import { Bar } from "react-chartjs-2";
 import { supabase } from "../../lib/supabase";
 import { CURRENT_USER } from "../../lib/currentUser";
 
+
 import {
   Chart as ChartJS,
   CategoryScale,
