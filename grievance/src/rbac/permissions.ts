@@ -31,3 +31,6 @@ export const RBAC: Record<Role, ModulePermission[]> = {
     { module: "RPSL", allowed: true },
   ],
 };
+
+
+// i guess i need to remove the submit grievacne button and just keep the card

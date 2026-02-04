@@ -5,18 +5,18 @@ import VerifyOtp from "../pages/auth/VerifyOtp";
 
 import Home from "../pages/dashboard/Home";
 import GrievanceDashboard from "../pages/dashboard/Dashboard";
-
+import GrievanceForm from "../components/GrievanceForm";
 import RequireOtp from "../pages/auth/RequireOtp";
 
 export default function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Authentication */}
+
         <Route path="/login" element={<Login />} />
         <Route path="/verify-otp" element={<VerifyOtp />} />
 
-        {/* Protected – Common Dashboard */}
+
         <Route
           path="/dashboard"
           element={
@@ -26,7 +26,7 @@ export default function AppRoutes() {
           }
         />
 
-        {/* Protected – Grievance Module */}
+
         <Route
           path="/dashboard/grievances"
           element={
@@ -36,7 +36,15 @@ export default function AppRoutes() {
           }
         />
 
-        {/* Defaults */}
+        <Route
+          path="/dashboard/grievances/new"
+          element={
+            <RequireOtp>
+              <GrievanceForm />
+            </RequireOtp>
+          }
+        />
+
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

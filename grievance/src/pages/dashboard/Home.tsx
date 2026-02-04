@@ -12,14 +12,13 @@ export default function Home() {
   const navigate = useNavigate();
   const { user, hasModuleAccess } = useGovernance(); 
   
-  // Identify if user is part of Governing Authority (DGS) or an Applicant (Seafarer)
+ 
   const isInternal = user.actorGroup === 'DGS_OFFICER';
 
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
-        
-        {/* 1. DYNAMIC HEADER */}
+
         <header className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
@@ -30,19 +29,19 @@ export default function Home() {
               Logged in as {user.name}
             </p>
           </div>
-
+{/* 
           {!isInternal && (
             <button 
-              onClick={() => navigate('/dashboard/submit')}
+              onClick={() => navigate('/dashboard/grievances/new')}
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-bold transition-all shadow-lg shadow-blue-200"
             >
               <PlusCircle size={18} />
               Submit Grievance
             </button>
-          )}
+          )} */}
         </header>
 
-        {/* 2. URGENT OVERRIDE: High-priority crisis visibility for Officers */}
+        
         {hasModuleAccess('CRISIS') && isInternal && (
           <div className="bg-amber-50 border border-amber-200 p-5 rounded-3xl flex items-center justify-between text-amber-900 shadow-sm">
             <div className="flex items-center gap-4">
@@ -63,8 +62,8 @@ export default function Home() {
           </div>
         )}
 
-        {/* 3. PERFORMANCE SUMMARY: Scoped to Actor Group */}
-        <section>
+
+        {/* <section>
           <div className="flex items-center gap-2 mb-4">
             <Zap size={16} className="text-blue-600" />
             <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
@@ -72,11 +71,10 @@ export default function Home() {
             </h2>
           </div>
           <MetricsRow />
-        </section>
+        </section> */}
 
-        {/* 4. CONDITIONAL CONTENT: Analytical vs. Task-Based */}
         {isInternal ? (
-          /* INTERNAL VIEW: Analytical Processing */
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
               <h3 className="text-sm font-bold text-gray-500 mb-6 flex items-center gap-2">
@@ -92,16 +90,16 @@ export default function Home() {
             </div>
           </div>
         ) : (
-          /* EXTERNAL VIEW: Application Lifecycle */
+
           <div className="space-y-10">
             {/* Historical Progress Metrics */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <PersonalProgressCard title="Ongoing Tasks" value="2" subtitle="Current Applications" />
+            {/* <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <PersonalProgressCard title=" Tasks" value="2" subtitle="Current Applications" />
               <PersonalProgressCard title="Avg. Resolution" value="5 Days" subtitle="Category specific" />
               <PersonalProgressCard title="Success Rate" value="92%" subtitle="Traceable closures" />
-            </div>
+            </div> */}
 
-            {/* Centralized Triage Entry */}
+
             <section className="space-y-4">
               <div className="flex items-center gap-2">
                 <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Application Portal</h2>
@@ -112,11 +110,11 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-              {/* ModuleGrid will now show only authorized module (Grievance) */}
+              
               <ModuleGrid />
             </section>
 
-            {/* Application History Audit Log */}
+
             <div className="space-y-4 pt-4">
               <div className="flex justify-between items-end px-2">
                 <h3 className="text-lg font-bold text-gray-800">Recent Submissions</h3>

@@ -20,7 +20,7 @@ export default function Sidebar() {
         {!collapsed && (
           <div className="flex items-center gap-2 animate-in fade-in duration-300">
            
-            <span className="font-bold text-white tracking-tighter">E-GOV</span>
+            <span className="font-bold text-white tracking-tighter"></span>
           </div>
         )}
         <button 
