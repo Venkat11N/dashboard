@@ -7,6 +7,9 @@ import Home from "../pages/dashboard/Home";
 import GrievanceDashboard from "../pages/dashboard/Dashboard";
 import GrievanceForm from "../components/GrievanceForm";
 import RequireOtp from "../pages/auth/RequireOtp";
+import SubmissionSuccess from "../components/grievance/SubmissionSuccess";
+import AllSubmissions from "../components/dashboard/AllSubmission";
+import RequireAuth from "../pages/auth/RequireAuth";
 
 export default function AppRoutes() {
   return (
@@ -44,6 +47,25 @@ export default function AppRoutes() {
             </RequireOtp>
           }
         />
+
+        <Route
+          path="/dashboard/application-status"
+          element={
+            <RequireOtp>
+              <SubmissionSuccess />
+            </RequireOtp>
+          }
+        />
+
+        <Route 
+        path="/dashboard/grievances" 
+        element={
+        <RequireAuth>
+          <AllSubmissions />
+          </RequireAuth>
+        } 
+      />
+
 
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/login" replace />} />

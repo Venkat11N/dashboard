@@ -2,7 +2,7 @@ import DashboardLayout from "../../components/layout/DashboardLayout";
 import MetricsRow from "../../components/dashboard/MetricsRow";
 import CategoryPieChart from "../../components/charts/CategoryPieChart";
 import SubcategoryBarChart from "../../components/charts/SubcategoryBarChart";
-import GrievanceTable from "../../components/grievance/GrievanvceTable";
+import GrievanceTable from "../../components/grievance/GrievanceTable";
 import ModuleGrid from "../dashboard/ModuleGrid";
 import { useGovernance } from "../../core/GovernanceContext"; 
 import { PlusCircle, ShieldAlert, Zap, Clock, CheckCircle2, Info } from "lucide-react";
@@ -119,14 +119,14 @@ export default function Home() {
               <div className="flex justify-between items-end px-2">
                 <h3 className="text-lg font-bold text-gray-800">Recent Submissions</h3>
                 <button
-                  onClick={() => navigate('/dashboard/application-status')}
+                  onClick={() => navigate('/dashboard/grivances')}
                   className="text-sm font-bold text-blue-600 hover:underline"
                 >
                   View Full History
                 </button>
               </div>
               <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-                <GrievanceTable />
+                <GrievanceTable limit={3} />
               </div>
             </div>
           </div>

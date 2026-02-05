@@ -1,15 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "../../src/lib/supabase";
 import { useNavigate } from "react-router-dom";
-import { Upload, CheckCircle2, AlertCircle, ShieldCheck, X, Search } from "lucide-react";
-
-// Keyword suggestions based on your Escalation Matrix categories
-const MARITIME_KEYWORDS = [
-  "INDoS Reference Number", "CDC Renewal Delay", "Non-payment of wages",
-  "Sign off request", "Vessel abandonment", "Medical emergency",
-  "SID biometric error", "Sea service update", "Passport number correction",
-  "MTI course fees", "Assessment rejected", "COC dispatch status"
-];
+import { Upload, ShieldCheck, X, Search, FileText, Trash2 } from "lucide-react";
+import { getAllCategories, getSubcategories } from "../services/CategoryService";
 
 export default function GrievanceForm() {
   const navigate = useNavigate();
@@ -20,138 +13,155 @@ export default function GrievanceForm() {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
   
-  // States for Autocomplete
-  const [subjectSuggestions, setSubjectSuggestions] = useState<string[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const suggestionRef = useRef<HTMLDivElement>(null);
-
   const [formData, setFormData] = useState({
-    subject: "",
     description: "",
     subCategoryId: "",
   });
-  const [file, setFile] = useState<File | null>(null);
+
+  const [files, setFiles] = useState<File[]>([]);
+
 
   useEffect(() => {
     async function prepareForm() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('*, master_ranks(name), master_departments(name)')
+        .select('*')
         .eq('id', user.id)
         .single();
       
-      setProfile(profileData);
+      if (profileData) setProfile(profileData);
 
-      const { data: catData } = await supabase.from('grievance_categories').select('*');
-      setCategories(catData || []);
+
+      const cats = await getAllCategories();
+      setCategories(cats);
     }
     prepareForm();
-
-    // Close suggestions on click outside
-    const handleClickOutside = (e: any) => {
-      if (suggestionRef.current && !suggestionRef.current.contains(e.target)) {
-        setShowSuggestions(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // AUTO-FILTER Sub-categories when Category changes
+
   useEffect(() => {
-    if (selectedCategory) {
-      // Clear current sub-category when parent category changes
-      setFormData(prev => ({ ...prev, subCategoryId: "" }));
-      
-      supabase.from('grievance_subcategories')
-        .select('*')
-        .eq('category_id', selectedCategory)
-        .then(({ data }) => setSubcategories(data || []));
-    } else {
-      setSubcategories([]);
+    async function fetchSubs() {
+      if (selectedCategory) {
+        setFormData(prev => ({ ...prev, subCategoryId: "" }));
+        const subs = await getSubcategories(Number(selectedCategory));
+        setSubcategories(subs);
+      } else {
+        setSubcategories([]);
+      }
     }
+    fetchSubs();
   }, [selectedCategory]);
 
-  // AUTOCOMPLETE Logic for Subject
-  const handleSubjectChange = (val: string) => {
-    setFormData({ ...formData, subject: val });
-    if (val.length > 2) {
-      const filtered = MARITIME_KEYWORDS.filter(k => 
-        k.toLowerCase().includes(val.toLowerCase())
-      );
-      setSubjectSuggestions(filtered);
-      setShowSuggestions(true);
-    } else {
-      setShowSuggestions(false);
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files);
+      setFiles(prev => [...prev, ...newFiles]);
     }
   };
 
-  const handleAttemptSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setShowConfirm(true);
+  const removeFile = (index: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  async function handleFinalSubmit() {
+  const handleFinalSubmit = async () => {
+    if (!profile) return alert("Profile not loaded.");
     setLoading(true);
     setShowConfirm(false);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      // Reference Number Generation for Audit Trail
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Session expired. Please log in.");
+
       const refNo = `GRV-${Date.now().toString().slice(-6)}`;
+
 
       const { data: grievance, error: gError } = await supabase
         .from('grievances')
         .insert({
-          user_id: user?.id,
-          category_id: selectedCategory,
-          subcategory_id: formData.subCategoryId,
-          subject: formData.subject,
+          reference_number: refNo,
+          user_id: session.user.id,
+          indos_number: profile.indos_number,
+          first_name: profile.first_name,
+          last_name: profile.last_name,
+          category_id: Number(selectedCategory),
+          subcategory_id: Number(formData.subCategoryId),
           description: formData.description,
-          status: 'PENDING'
+          status: 'SUBMITTED'
         })
         .select().single();
 
       if (gError) throw gError;
 
-      // ... existing file upload logic ...
 
-      navigate("/dashboard/application-status");
+      if (files.length > 0 && grievance) {
+        for (const file of files) {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${grievance.id}/${Math.random().toString(36).substring(7)}.${fileExt}`;
+          
+          const { error: uploadError } = await supabase.storage
+            .from('grievance-attachments')
+            .upload(fileName, file);
+
+          if (!uploadError) {
+            const { data: { publicUrl } } = supabase.storage
+              .from('grievance-attachments')
+              .getPublicUrl(fileName);
+
+            await supabase.from('grievance_files').insert({
+              grievance_id: grievance.id,
+              file_url: publicUrl
+            });
+          }
+        }
+      }
+
+      navigate("/dashboard/application-status", { state: { 
+        refNumber: refNo,
+        categoryName: categories.find(c => c.id == selectedCategory)?.name
+      } });
     } catch (err: any) {
-      alert(err.message);
+      alert("Submission Error: " + err.message);
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white rounded-3xl shadow-sm border border-gray-100 relative">
-      <h1 className="text-2xl font-bold mb-6 text-gray-900">Submit New Grievance</h1>
+      <h1 className="text-2xl font-black mb-6 text-gray-900 tracking-tight">Submit New Grievance</h1>
 
-      <form onSubmit={handleAttemptSubmit} className="space-y-6">
-        {/* Personal Details Row (Pre-filled) */}
-        <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* ... INDoS, CDC, etc. (kept same as your code) ... */}
-            <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">INDoS Number</label>
-                <p className="font-mono font-bold text-blue-600 text-lg">{profile?.indos_number || 'N/A'}</p>
-            </div>
-            <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Full Name</label>
-                <p className="font-semibold text-gray-800">{profile?.first_name} {profile?.last_name}</p>
-            </div>
+      <form onSubmit={(e) => { e.preventDefault(); setShowConfirm(true); }} className="space-y-6">
+        
+        {/* Profile Card */}
+        <div className="bg-slate-50 p-6 rounded-3xl border border-slate-200 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="space-y-1">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">INDoS Number</label>
+            <p className="font-mono font-bold text-blue-600 text-lg">{profile?.indos_number || '---'}</p>
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">CDC Number</label>
+            <p className="font-mono font-bold text-blue-600 text-lg">{profile?.cdc_number || '---'}</p>
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Full Name</label>
+            <p className="font-bold text-slate-800 truncate">{profile ? `${profile.first_name} ${profile.last_name}` : '---'}</p>
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email</label>
+            <p className="font-bold text-slate-800 truncate">{profile?.email || '---'}</p>
+          </div>
         </div>
 
-        {/* Category & Sub-Category Dropdowns */}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-semibold text-gray-700">Category</label>
-            <select 
-              className="border p-4 rounded-2xl bg-white outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+            <label className="text-xs font-bold text-gray-700 uppercase px-1">Category</label>
+            <select
+              className="border-none ring-1 ring-slate-200 p-4 rounded-2xl bg-white outline-none focus:ring-2 focus:ring-blue-500 font-medium"
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
               required
@@ -162,12 +172,12 @@ export default function GrievanceForm() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-semibold text-gray-700">Sub-Category</label>
-            <select 
-              className="border p-4 rounded-2xl bg-white outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:cursor-not-allowed"
+            <label className="text-xs font-bold text-gray-700 uppercase px-1">Sub-Category</label>
+            <select
+              className="border-none ring-1 ring-slate-200 p-4 rounded-2xl bg-white outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-slate-100 font-medium"
               disabled={!selectedCategory}
               value={formData.subCategoryId}
-              onChange={(e) => setFormData({...formData, subCategoryId: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, subCategoryId: e.target.value })}
               required
             >
               <option value="">Select Sub-category</option>
@@ -176,74 +186,76 @@ export default function GrievanceForm() {
           </div>
         </div>
 
-        {/* AUTOCOMPLETE SUBJECT FIELD */}
-        <div className="flex flex-col gap-2 relative" ref={suggestionRef}>
-          <label className="text-sm font-semibold text-gray-700">Subject</label>
-          <div className="relative">
-            <input 
-              className="w-full border p-4 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g. Non-payment of wages"
-              value={formData.subject}
-              onChange={(e) => handleSubjectChange(e.target.value)}
-              onFocus={() => formData.subject.length > 2 && setShowSuggestions(true)}
-              required
-            />
-            <Search className="absolute right-4 top-4 text-gray-300" size={20} />
-          </div>
-          
-          {/* Suggestion Dropdown */}
-          {showSuggestions && subjectSuggestions.length > 0 && (
-            <div className="absolute top-[100%] left-0 right-0 z-10 bg-white border border-slate-100 shadow-xl rounded-2xl mt-1 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-              {subjectSuggestions.map((suggestion, index) => (
-                <div 
-                  key={index}
-                  className="p-4 hover:bg-blue-50 cursor-pointer text-sm font-medium text-slate-700 border-b last:border-0 border-slate-50 transition-colors"
-                  onClick={() => {
-                    setFormData({...formData, subject: suggestion});
-                    setShowSuggestions(false);
-                  }}
-                >
-                  {suggestion}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
 
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-semibold text-gray-700">Description</label>
-          <textarea 
+          <label className="text-xs font-bold text-gray-700 uppercase px-1">Detailed Description</label>
+          <textarea
             rows={5}
-            className="border p-4 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-            placeholder="Please provide full details for the Nodal Officer to triage..."
+            className="border-none ring-1 ring-slate-200 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 resize-none font-medium"
+            placeholder="Provide details about your issue..."
             value={formData.description}
-            onChange={(e) => setFormData({...formData, description: e.target.value})}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             required
           />
         </div>
 
-        {/* ... File Uploader & Confirmation Modal (kept same as your code) ... */}
-        <button
-          type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-widest py-5 rounded-2xl transition-all shadow-lg shadow-blue-100 mt-4"
-        >
-          Proceed to Confirmation
+
+        <div className="space-y-3">
+          <label className="text-xs font-bold text-gray-700 uppercase px-1">Attachments</label>
+          <div className="border-2 border-dashed border-slate-200 p-8 rounded-3xl flex flex-col items-center gap-3 hover:bg-slate-50 hover:border-blue-400 transition-all cursor-pointer relative group">
+            <div className="p-3 bg-white rounded-xl shadow-sm group-hover:bg-blue-600 group-hover:text-white transition-all">
+              <Upload size={20} />
+            </div>
+            <p className="text-sm text-slate-500 font-bold text-center">Click to upload multiple documents</p>
+            <input type="file" multiple className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleFileChange} />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            {files.map((f, index) => (
+              <div key={index} className="flex items-center justify-between bg-blue-50/50 p-3 rounded-xl border border-blue-100">
+                <div className="flex items-center gap-3 truncate">
+                  <FileText size={18} className="text-blue-500" />
+                  <span className="text-sm font-medium text-slate-700 truncate">{f.name}</span>
+                </div>
+                <button type="button" onClick={() => removeFile(index)} className="p-1 hover:bg-red-100 rounded-lg text-red-500 transition-colors">
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <button type="submit" disabled={!profile} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-widest py-5 rounded-2xl transition-all shadow-xl disabled:bg-slate-300 disabled:cursor-not-allowed">
+          {!profile ? "Loading Profile..." : "Proceed to Confirmation"}
         </button>
       </form>
 
-      {/* Confirmation Modal Overlay Logic ... */}
+
       {showConfirm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-             {/* Modal Content - same as yours but with matching styles */}
-             <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden p-8">
-                <h3 className="text-xl font-bold mb-4">Confirm Submission</h3>
-                <p className="text-sm text-gray-500 mb-6 italic">Category: {categories.find(c => c.id == selectedCategory)?.name}</p>
-                <div className="flex gap-4">
-                    <button onClick={() => setShowConfirm(false)} className="flex-1 bg-gray-100 py-3 rounded-xl font-bold">Back</button>
-                    <button onClick={handleFinalSubmit} className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold">Confirm</button>
-                </div>
-             </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl p-8 animate-in zoom-in-95">
+            <div className="flex items-center gap-3 text-blue-600 mb-6">
+              <ShieldCheck size={28} />
+              <h3 className="text-2xl font-black tracking-tight">Confirm Submission</h3>
+            </div>
+            <div className="space-y-4 mb-8">
+              <div className="flex justify-between border-b pb-2">
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Files</span>
+                <span className="text-sm font-bold">{files.length} Attachments</span>
+              </div>
+              <div className="flex justify-between border-b pb-2">
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Category</span>
+                <span className="text-sm font-bold">{categories.find(c => c.id == selectedCategory)?.name}</span>
+              </div>
+            </div>
+            <div className="flex gap-4">
+              <button onClick={() => setShowConfirm(false)} className="flex-1 bg-slate-100 py-4 rounded-2xl font-bold text-slate-600">Back</button>
+              <button onClick={handleFinalSubmit} disabled={loading} className="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-bold">
+                {loading ? "Submitting..." : "Confirm & Submit"}
+              </button>
+            </div>
           </div>
+        </div>
       )}
     </div>
   );
