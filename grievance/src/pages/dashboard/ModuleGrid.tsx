@@ -10,7 +10,7 @@ export default function ModuleGrid() {
     { 
       id: 'GRIEVANCE', 
       label: 'Grievance Management',
-      // FIX: Added the 's' to match your AppRoutes exactly
+      
       path: '/dashboard/grievances/new', 
       icon: <MessageSquare size={24} />,
       description: 'Submit and track your maritime concerns.' 
@@ -19,7 +19,7 @@ export default function ModuleGrid() {
     { 
       id: 'CRISIS', 
       label: 'Crisis Management', 
-      // FIX: Corrected spelling to 'dashboard'
+  
       path: '/dashboard/crisis', 
       icon: <ShieldAlert size={24} />,
       description: 'Urgent case handling for sensitive maritime events.'
