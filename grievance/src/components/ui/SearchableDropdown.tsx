@@ -13,7 +13,7 @@ type SearchableDropdownProps = {
   onAutoOpenComplete?: () => void;
 };
 
-const SearchableDropdown = ({ 
+export const SearchableDropdown = ({ 
   items, 
   selectedItem, 
   onSelect, 
@@ -36,7 +36,7 @@ const SearchableDropdown = ({
     ? items.filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()))
     : items;
 
-  // Auto-open when triggered
+
   useEffect(() => {
     if (autoOpen && !disabled && items.length > 0 && !loading) {
       setIsOpen(true);
