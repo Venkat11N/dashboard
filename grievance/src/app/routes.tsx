@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "../pages/auth/Login";
 import VerifyOtp from "../pages/auth/VerifyOtp";
 import Home from "../pages/dashboard/Home";
-import GrievanceForm from "../components/GrievanceForm";
+import GrievanceForm from "../pages/dashboard/GrievanceForm";
 import RequireOtp from "../pages/auth/RequireOtp";
 import SubmissionSuccess from "../components/grievance/SubmissionSuccess";
 import AllSubmissions from "../components/dashboard/AllSubmission";

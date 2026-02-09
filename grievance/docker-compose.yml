@@ -1,0 +1,27 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: maritime_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: maritime_grievance
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./docker/db_data:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: maritime_pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@dgs.com
+      PGADMIN_DEFAULT_PASSWORD: admin_password
+    ports:
+      - "8080:80"
+    # This line is the magic fix for Windows timeout issues
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

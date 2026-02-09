@@ -65,53 +65,28 @@ export const FileDropZone = ({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={`relative border-2 border-dashed rounded-lg p-6 transition-all cursor-pointer text-center ${
-          isDragging 
-            ? 'border-slate-400 bg-slate-50' 
-            : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+          isDragging ? 'border-slate-400 bg-slate-50' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
         }`}
       >
-        <input
-          type="file"
-          multiple
-          onChange={handleFileInput}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-        />
-        
+        <input type="file" multiple onChange={handleFileInput} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
         <div className="flex flex-col items-center gap-2">
-          <div className={`p-3 rounded-full ${isDragging ? 'bg-slate-200' : 'bg-slate-100'}`}>
-            <CloudUpload size={24} className={isDragging ? 'text-slate-600' : 'text-slate-400'} />
-          </div>
+          <div className={`p-3 rounded-full ${isDragging ? 'bg-slate-200' : 'bg-slate-100'}`}><CloudUpload size={24} className={isDragging ? 'text-slate-600' : 'text-slate-400'} /></div>
           <div>
-            <p className="text-sm font-medium text-slate-700">
-              {isDragging ? 'Drop files here' : 'Drag & drop files here'}
-            </p>
+            <p className="text-sm font-medium text-slate-700">{isDragging ? 'Drop files here' : 'Drag & drop files here'}</p>
             <p className="text-xs text-slate-400 mt-1">or click to browse • Max 5MB per file</p>
           </div>
         </div>
       </div>
-
       {files.length > 0 && (
         <div className="space-y-2">
           {files.map((file, index) => (
-            <div 
-              key={index} 
-              className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100 group"
-            >
-              <div className={`p-2 rounded ${fileTypeColors[getFileType(file.name)]}`}>
-                <Paperclip size={14} />
-              </div>
+            <div key={index} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100 group">
+              <div className={`p-2 rounded ${fileTypeColors[getFileType(file.name)]}`}><Paperclip size={14} /></div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-slate-700 truncate">{file.name}</p>
                 <p className="text-xs text-slate-400">{formatFileSize(file.size)}</p>
               </div>
-              <button 
-                type="button" 
-                onClick={() => onFileRemove(index)} 
-                className="p-1.5 rounded hover:bg-red-100 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
-              >
-                <X size={14} />
-              </button>
+              <button type="button" onClick={() => onFileRemove(index)} className="p-1.5 rounded hover:bg-red-100 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"><X size={14} /></button>
             </div>
           ))}
         </div>

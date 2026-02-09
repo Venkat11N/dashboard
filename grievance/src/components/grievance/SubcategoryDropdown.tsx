@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getSubcategories, type Subcategory } from "../../services/categoryService";
+import { getSubcategories, type Subcategory } from "../../services/CategoryService";
 
 export default function SubcategoryDropdown({ categoryId, onSelect }: { categoryId: number | null, onSelect: (val: string) => void }) {
   const [subs, setSubs] = useState<Subcategory[]>([]);

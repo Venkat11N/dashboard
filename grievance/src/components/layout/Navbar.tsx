@@ -2,7 +2,7 @@ import { useSidebar } from '../../context/SidebarContext';
 import { LogOut, Menu, Bell } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import GrievanceForm from '../GrievanceForm';
+import GrievanceForm from '../../pages/dashboard/GrievanceForm';
 
 export default function Navbar() {
   const { toggle } = useSidebar();
