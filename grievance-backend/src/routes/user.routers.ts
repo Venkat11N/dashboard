@@ -1,14 +1,14 @@
 import { Router } from 'express';
+import { verifyToken } from '../middleware/auth.middleware.js';
 import { login } from '../controllers/auth.controller.js'
 import { getProfile } from '../controllers/user.controller.js';
-import { verifyToken } from '../middleware/auth.middleware.js';
 
 const router = Router();
-
-console.log("Router Register Profile")
 
 router.post('/login', login);
 
 router.get('/profile', verifyToken, getProfile);
 
 export default router;
+
+

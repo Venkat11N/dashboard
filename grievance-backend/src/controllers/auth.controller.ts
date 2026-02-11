@@ -16,7 +16,7 @@ export const login = async (req: Request, res: Response) => {
   }
 
   try {
-    // 2. Fetch User with Role and Security Data
+
     const [rows]: any = await pool.query(
       `
       SELECT 
@@ -46,9 +46,6 @@ export const login = async (req: Request, res: Response) => {
 
     const user = rows[0];
 
-    // 3. Password Verification
-    // We use the hash directly from the DB. 
-    // Ensure you have updated the DB with the 60-character hash from your terminal.
     const isMatch = await bcrypt.compare(password, user.pass_hash);
 
     if (!isMatch) {

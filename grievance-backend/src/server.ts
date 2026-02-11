@@ -1,5 +1,5 @@
 import http, { type Server } from 'http';
-import app from './app.js';
+import app from './index.js';
 import config from './config/index.js';
 import { DatabaseConnection } from './db/connections.js';
 
@@ -28,6 +28,7 @@ function shutdown(signal: string) {
 }
 
 start();
+
 
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
