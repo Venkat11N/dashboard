@@ -15,6 +15,5 @@ export const getProfile = async(req: any, res: Response) => {
     });
   } catch (error) {
     res.status(500).json({status: "error", message: "Failed to fetch profile"});
-  
   }
 }

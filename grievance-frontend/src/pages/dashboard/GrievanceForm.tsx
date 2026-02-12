@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { supabase } from "../../lib/supabase";
 import { useNavigate } from "react-router-dom";
-import { FileText, ShieldCheck, Hash, CreditCard, User, Mail, ChevronRight, AlertCircle, Check } from "lucide-react";
+import { FileText, ShieldCheck, Hash, CreditCard, User, Mail, AlertCircle, Check } from "lucide-react";
 import { getAllCategories, getSubcategories } from "../../services/CategoryService";
 import type { Category, Subcategory } from "../../services/CategoryService";
+import { API_BASE_URL } from "../../config/api"; // Centralized config
 
 import { RichTextEditor } from "../../components/grievance/RichTextEditor";
 import { SearchableDropdown } from "../../components/ui/SearchableDropdown";
@@ -29,14 +29,32 @@ export default function GrievanceForm() {
 
   useEffect(() => {
     async function prepareForm() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: profileData } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-      if (profileData) setProfile(profileData);
-      setCategories(await getAllCategories());
+      try {
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+          navigate('/login');
+          return;
+        }
+
+       
+        const response = await fetch(`${API_BASE_URL}/profile`, {
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const result = await response.json();
+        
+        if (result.status === 'ok') {
+          setProfile(result.data);
+        }
+
+        // Load categories using your existing service
+        setCategories(await getAllCategories());
+      } catch (err) {
+        console.error("Initialization error:", err);
+      }
     }
     prepareForm();
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     async function fetchSubcategories() {
@@ -50,7 +68,6 @@ export default function GrievanceForm() {
       setSubcategories(subs);
       setSubLoading(false);
       
-      // Auto-trigger dropdown opening once subs are loaded
       if (subs.length > 0) {
         setTimeout(() => setAutoOpenSubcategory(true), 50);
       }
@@ -64,33 +81,55 @@ export default function GrievanceForm() {
     if (!profile || !selectedCategory || !selectedSubcategory) return;
     setLoading(true);
     setShowConfirm(false);
+
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Session expired.");
-      const refNo = `GRV-${Date.now().toString().slice(-6)}`;
-      const { data: grievance, error: gError } = await supabase.from('grievances').insert({
-        reference_number: refNo, user_id: session.user.id, indos_number: profile.indos_number,
-        first_name: profile.first_name, last_name: profile.last_name,
-        category_id: selectedCategory.id, subcategory_id: selectedSubcategory.id,
-        description: descriptionHtml, status: 'SUBMITTED'
-      }).select().single();
-      if (gError) throw gError;
-      if (files.length > 0 && grievance) {
-        for (const file of files) {
-          const fileName = `${grievance.id}/${Math.random().toString(36).substring(7)}.${file.name.split('.').pop()}`;
-          const { error: uploadError } = await supabase.storage.from('grievance-attachments').upload(fileName, file);
-          if (!uploadError) {
-            const { data: { publicUrl } } = supabase.storage.from('grievance-attachments').getPublicUrl(fileName);
-            await supabase.from('grievance_files').insert({ grievance_id: grievance.id, file_url: publicUrl });
-          }
-        }
+      const token = localStorage.getItem('accessToken');
+      
+      // 2. Submit to your MySQL backend controller
+      // Mapping the frontend state to the backend expectations
+      const response = await fetch(`${API_BASE_URL}/submit-grievance`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          indos_number: profile.indos_number,
+          first_name: profile.first_name,
+          last_name: profile.last_name,
+          cdc_number: profile.cdc_number,
+          dob: profile.date_of_birth,
+          category_id: selectedCategory.id,
+          subcategory_id: selectedSubcategory.id,
+          subject: selectedSubcategory.name, // Using subcategory name as subject
+          description: descriptionHtml,
+          priority: 'MEDIUM'
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.status === 'ok') {
+        // Handle file uploads separately if needed, or implement a Multipart form
+        navigate("/dashboard/application-status", { 
+          state: { 
+            refNumber: result.data.reference_number, 
+            categoryName: selectedCategory.name 
+          } 
+        });
+      } else {
+        throw new Error(result.message);
       }
-      navigate("/dashboard/application-status", { state: { refNumber: refNo, categoryName: selectedCategory.name } });
-    } catch (err: any) { alert(err.message); } finally { setLoading(false); }
+    } catch (err: any) { 
+      alert(err.message || "Failed to submit grievance."); 
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
+      {/* Navbar section */}
       <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-6 py-5 flex items-center gap-4">
           <div className="p-3 bg-slate-900 rounded-xl shadow-lg"><FileText className="text-white" size={24} /></div>
@@ -100,6 +139,7 @@ export default function GrievanceForm() {
 
       <div className="max-w-4xl mx-auto px-6 py-8">
         <form onSubmit={(e) => { e.preventDefault(); if (isFormValid) setShowConfirm(true); }} className="space-y-6">
+          {/* Applicant Info Section */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="px-6 py-4 bg-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-3"><ShieldCheck className="text-slate-300" size={20} /><span className="text-white font-semibold">Applicant Information</span></div>
@@ -112,6 +152,7 @@ export default function GrievanceForm() {
             </div>
           </div>
 
+          {/* Dropdown Section */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
             <SearchableDropdown items={categories} selectedItem={selectedCategory} onSelect={(item) => { setSelectedCategory(item); setSelectedSubcategory(null); }} label="Category" placeholder="Select..." />
             <SearchableDropdown 
@@ -127,6 +168,7 @@ export default function GrievanceForm() {
             />
           </div>
 
+          {/* Editor Section */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
               <div>
@@ -145,6 +187,7 @@ export default function GrievanceForm() {
             <RichTextEditor onChange={(html, text) => { setDescriptionHtml(html); setDescriptionLength(text.trim().length); }} />
           </div>
 
+          {/* Files Section */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
             <h2 className="font-semibold text-slate-800 mb-4">Supporting Documents</h2>
             <FileDropZone files={files} onFilesAdd={(newFiles) => setFiles(prev => [...prev, ...newFiles.filter(f => f.size <= 5 * 1024 * 1024)])} onFileRemove={(idx) => setFiles(prev => prev.filter((_, i) => i !== idx))} />
@@ -156,9 +199,10 @@ export default function GrievanceForm() {
         </form>
       </div>
 
+      {/* Confirmation Modal */}
       {showConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
             <div className="px-6 py-5 bg-slate-800 text-center text-white"><ShieldCheck className="mx-auto mb-3" size={28} /><h3 className="text-xl font-bold">Review & Submit</h3></div>
             <div className="p-6 space-y-3">
                <div className="flex justify-between border-b pb-2"><span className="text-sm text-slate-500">Category</span><span className="text-sm font-semibold">{selectedCategory?.name}</span></div>
@@ -169,16 +213,6 @@ export default function GrievanceForm() {
           </div>
         </div>
       )}
-
-      <style>{`
-        .ProseMirror p.is-editor-empty:first-child::before { content: attr(data-placeholder); float: left; color: #9ca3af; pointer-events: none; height: 0; }
-        .ProseMirror:focus { outline: none; }
-        .ProseMirror ul, .ProseMirror ol { padding-left: 1.5rem; }
-        .ProseMirror ul { list-style-type: disc; }
-        .ProseMirror ol { list-style-type: decimal; }
-        .animate-in { animation: zoom-in-95 0.2s ease-out; }
-        @keyframes zoom-in-95 { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-      `}</style>
     </div>
   );
 }

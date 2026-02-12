@@ -1,9 +1,6 @@
 import { useEffect, useState } from "react";
 import { Bar } from "react-chartjs-2";
-import { supabase } from "../../lib/supabase";
-import { CURRENT_USER } from "../../lib/currentUser";
-
-
+import { API_BASE_URL } from "../../config/api.ts"; 
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -12,24 +9,52 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
 export default function SubcategoryBarChart() {
-  const [rows, setRows] = useState([]);
+  const [rows, setRows] = useState<{ subcategory: string; total: number }[]>([]);
 
   useEffect(() => {
     async function load() {
-      const { data } = await supabase.rpc(
-        "grievance_count_by_subcategory",
-        { uid: CURRENT_USER.id }
-      );
-      if (data) setRows(data);
+      try {
+        const token = localStorage.getItem('accessToken');
+        
+        const response = await fetch(`${API_BASE_URL}/my-grievances`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const result = await response.json();
+
+        if (result.status === 'ok' && result.data) {
+
+          const counts: Record<string, number> = {};
+          
+          result.data.forEach((item: any) => {
+            const name = item.subcategory_name || "Unknown";
+            counts[name] = (counts[name] || 0) + 1;
+          });
+
+          const chartData = Object.entries(counts).map(([subcategory, total]) => ({
+            subcategory,
+            total
+          }));
+
+          setRows(chartData);
+        }
+      } catch (error) {
+        console.error("Failed to load chart data:", error);
+      }
     }
     load();
   }, []);
 
-  const labels = rows.map((r: any) => r.subcategory);
-  const values = rows.map((r: any) => r.total);
+  const labels = rows.map((r) => r.subcategory);
+  const values = rows.map((r) => r.total);
 
   return (
     <div className="bg-white p-6 rounded shadow">

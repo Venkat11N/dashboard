@@ -1,23 +1,47 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { API_BASE_URL } from '../config/api';
 
 export function useSeafarerData(indosNumber: string) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (indosNumber.length < 4) return;
+    // Basic validation to prevent unnecessary API calls
+    if (indosNumber.length < 4) {
+      setData(null);
+      return;
+    }
 
     async function fetchDetails() {
-      setLoading(true);
-      const { data: seafarer, error } = await supabase
-        .from('seafarers')
-        .select('first_name, last_name, cdc_number, date_of_birth, email')
-        .eq('indos_number', indosNumber)
-        .single();
+      try {
+        setLoading(true);
+        
+        // 1. Get the JWT token for authentication
+        const token = localStorage.getItem('accessToken');
 
-      if (!error && seafarer) setData(seafarer);
-      setLoading(false);
+        // 2. Fetch seafarer details from your Node.js endpoint
+        // Note: You will need to create this route on your backend later
+        const response = await fetch(`${API_BASE_URL}/seafarers/${indosNumber}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const result = await response.json();
+
+        if (result.status === 'ok' && result.data) {
+          setData(result.data);
+        } else {
+          setData(null);
+        }
+      } catch (error) {
+        console.error("Error fetching seafarer data:", error);
+        setData(null);
+      } finally {
+        setLoading(false);
+      }
     }
 
     fetchDetails();

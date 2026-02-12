@@ -1,30 +1,40 @@
-import { supabase } from "../lib/supabase";
-import { CURRENT_USER } from "../lib/currentUser";
-
+import { API_BASE_URL } from "../config/api.ts"; 
 export async function getGrievanceCounts() {
-  const statuses = ["PENDING", "RESOLVED", "ESCALATED"];
+  try {
 
-  const results = await Promise.all (
-    statuses.map(status =>
-      supabase
-      .from("grievacne")
-      .select("*", {count: "exact", head: true})
-      .eq("user_id", CURRENT_USER.id)
-      .eq("status", status)
-    )
-  );
+    const token = localStorage.getItem('accessToken');
 
-  const [pending, resolved, escalated] = results.map((r) => r.count || 0);
 
-  const {count: total } = await supabase
-  .from("grievances")
-  .select("*", {count: "exact", head: true})
-  .eq("user_id", CURRENT_USER.id);
+    const response = await fetch(`${API_BASE_URL}/my-grievances`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
 
-  return {
-    total: total || 0,
-    pending,
-    resolved,
-    escalated,
-  };
+    const result = await response.json();
+
+    if (result.status !== 'ok') {
+      throw new Error(result.message || 'Failed to fetch data');
+    }
+
+    const grievances = result.data;
+
+
+    return {
+      total: result.count || 0,
+      pending: grievances.filter((g: any) => g.status === 'SUBMITTED').length,
+      resolved: grievances.filter((g: any) => g.status === 'RESOLVED').length,
+      escalated: grievances.filter((g: any) => g.status === 'IN_PROGRESS').length,
+    };
+  } catch (error) {
+    console.error("Error getting grievance counts:", error);
+    return {
+      total: 0,
+      pending: 0,
+      resolved: 0,
+      escalated: 0,
+    };
+  }
 }

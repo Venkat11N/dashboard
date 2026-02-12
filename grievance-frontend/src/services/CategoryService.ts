@@ -1,5 +1,4 @@
-import { supabase } from "../lib/supabase";
-
+import { API_BASE_URL } from "../config/api"; 
 export interface Category {
   id: number;
   name: string;
@@ -11,29 +10,50 @@ export interface Subcategory {
   name: string;
 }
 
+/**
+ * Fetches all grievance categories from the MySQL backend
+ */
 export const getAllCategories = async (): Promise<Category[]> => {
-  const { data, error } = await supabase
-    .from('grievance_categories')
-    .select('id, name')
-    .order('id', { ascending: true });
+  try {
+    const response = await fetch(`${API_BASE_URL}/categories`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
 
-  if (error) {
+    const result = await response.json();
+
+    if (result.status === 'ok') {
+      return result.data || [];
+    }
+    return [];
+  } catch (error) {
     console.error("Error fetching categories:", error);
     return [];
   }
-  return data || [];
 };
 
+/**
+ * Fetches subcategories for a specific category ID
+ */
 export const getSubcategories = async (categoryId: number): Promise<Subcategory[]> => {
-  const { data, error } = await supabase
-    .from('grievance_subcategories')
-    .select('id, category_id, name')
-    .eq('category_id', categoryId) // Fixed: changed category_id to categoryId to match parameter
-    .order('name', { ascending: true });
+  try {
+    const response = await fetch(`${API_BASE_URL}/subcategories/${categoryId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
 
-  if (error) {
+    const result = await response.json();
+
+    if (result.status === 'ok') {
+      return result.data || [];
+    }
+    return [];
+  } catch (error) {
     console.error("Error fetching subcategories:", error);
     return [];
   }
-  return data || [];
 };
