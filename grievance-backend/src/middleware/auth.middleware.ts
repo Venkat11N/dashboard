@@ -1,33 +1,38 @@
-import { type Request, type Response, type NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import config from '../config/index.js'
+import { type Request, type Response, type NextFunction } from "express";
+import jwt from "jsonwebtoken";
+import config from "../config/index.js";
 
-interface AuthRequest extends Request {
-  user?: any;
-}
+export const verifyToken = (req: Request, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization;
 
-export const verifyToken = (req: AuthRequest, res: Response, next: NextFunction) => {
-  console.log( "--- MIDDLEWARE HIT ---");
-  const token = req.headers['authorization']?.split(' ')[1];
-  console.log("Token found:", token ? "yes" : "No");
-
-  if(!token) {
-    return res.status(403).json({
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({
       status: "error",
-      message: "Access denied. No token provided."
+      code: "NO_TOKEN",
+      message: "Access token required"
     });
   }
 
+  const token = authHeader.split(" ")[1];
+
   try {
     const decoded = jwt.verify(token, config.jwtSecret);
-    req.user = decoded;
-    console.log("Token Verified for User:" + (decoded as any).userId);
+    (req as any).user = decoded;
     next();
-  } catch (error) {
-    console.log("Token Verification Failed");
+  } catch (error: any) {
+ 
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({
+        status: "error",
+        code: "TOKEN_EXPIRED",  
+        message: "Access token expired"
+      });
+    }
+
     return res.status(401).json({
       status: "error",
-      message: "Unauthorized: Invalid or expired token"
+      code: "INVALID_TOKEN",
+      message: "Invalid access token"
     });
   }
 };

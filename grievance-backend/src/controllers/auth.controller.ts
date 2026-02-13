@@ -1,114 +1,80 @@
 import { type Request, type Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import nodemailer from "nodemailer";
-import { pool } from "../db/connections.js";
 import config from "../config/index.js";
-
-// 1. Configure Nodemailer Transporter
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: parseInt(process.env.SMTP_PORT || "587"),
-  secure: false, 
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS, // Use App Password if using Gmail
-  },
-});
+import { pool } from "../db/connections.js";
+import { sendOtpEmail, saveOtpToDb, getFullUserContext } from "../services/auth.service.js";
 
 export const login = async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    return res.status(400).json({ status: "error", message: "Email and password are required" });
+    return res.status(400).json({ status: "error", message: "Email and password required" });
   }
 
   try {
     const [rows]: any = await pool.query(
-      `SELECT a.account_id, a.official_email, s.pass_hash
-       FROM account_holders a
-       INNER JOIN account_security s ON a.account_id = s.account_id
+      `SELECT a.account_id, s.pass_hash 
+       FROM account_holders a 
+       INNER JOIN account_security s ON a.account_id = s.account_id 
        WHERE a.official_email = ? LIMIT 1`,
       [email]
     );
 
-    if (!rows || rows.length === 0) {
+    if (!rows || rows.length === 0 || !(await bcrypt.compare(password, rows[0].pass_hash))) {
       return res.status(401).json({ status: "error", message: "Invalid credentials" });
     }
 
-    const user = rows[0];
-    const isMatch = await bcrypt.compare(password, user.pass_hash);
-
-    if (!isMatch) {
-      return res.status(401).json({ status: "error", message: "Invalid credentials" });
-    }
-
-    // 2. Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 10 * 60000); // 10 minutes
+    const expiresAt = new Date(Date.now() + 10 * 60000);
 
-    // 3. Store OTP in database (using temp_otps table)
-    await pool.query(
-      `INSERT INTO temp_otps (email, otp_code, expires_at) 
-       VALUES (?, ?, ?) 
-       ON DUPLICATE KEY UPDATE otp_code = ?, expires_at = ?`,
-      [email, otp, expiresAt, otp, expiresAt]
-    );
+    await saveOtpToDb(email, otp, expiresAt);
+    await sendOtpEmail(email, otp);
 
-    // 4. Send Email via SMTP
-    await transporter.sendMail({
-      from: `"Maritime Portal" <${process.env.SMTP_USER}>`,
-      to: email,
-      subject: "Your Security Verification Code",
-      html: `
-        <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
-          <h2 style="color: #1d4ed8;">Security Verification</h2>
-          <p>You requested to sign in to the Maritime Portal.</p>
-          <p>Your 6-digit verification code is:</p>
-          <h1 style="background: #f3f4f6; padding: 10px; letter-spacing: 5px; text-align: center; color: #111;">${otp}</h1>
-          <p>This code will expire in 10 minutes. If you did not request this, please ignore this email.</p>
-        </div>
-      `,
-    });
-
-    // We do not send tokens yet. We redirect user to OTP screen.
-    return res.json({
-      status: "ok",
-      message: "Credentials verified. OTP sent to email.",
-    });
-
+    return res.json({ status: "ok", message: "Credentials verified. OTP sent." });
   } catch (error) {
-    console.error("Login/SMTP Error:", error);
+    console.error("Login error:", error);
     return res.status(500).json({ status: "error", message: "Internal server error" });
   }
 };
 
-/**
- * NEW: Verify OTP and issue JWT tokens
- */
 export const verifyOtp = async (req: Request, res: Response) => {
   const { email, otp_code } = req.body;
 
+  console.log("=== VERIFY OTP DEBUG ===");
+  console.log("Email:", email);
+  console.log("OTP Code:", otp_code);
+
+  if (!email || !otp_code) {
+    return res.status(400).json({ status: "error", message: "Email and OTP are required" });
+  }
+
   try {
-    const [rows]: any = await pool.query(
-      "SELECT * FROM temp_otps WHERE email = ? AND otp_code = ? AND expires_at > NOW()",
+
+    console.log("Step 1: Checking OTP in database...");
+
+    const [otpCheck]: any = await pool.query(
+      "SELECT email, otp_code, expires_at FROM temp_otps WHERE email = ? AND otp_code = ? AND expires_at > NOW() LIMIT 1",
       [email, otp_code]
     );
+    console.log("OTP Query Result:", otpCheck);
 
-    if (!rows || rows.length === 0) {
+    if (!otpCheck || otpCheck.length === 0) {
       return res.status(401).json({ status: "error", message: "Invalid or expired OTP" });
     }
 
-    // OTP is valid. Now get user details to sign the JWT.
-    const [userRows]: any = await pool.query(
-      `SELECT a.account_id, r.role_key 
-       FROM account_holders a 
-       INNER JOIN portal_roles r ON a.role_id = r.role_id 
-       WHERE a.official_email = ?`,
-      [email]
-    );
 
-    const user = userRows[0];
+    console.log("Step 2: Getting user context...");
+    const user = await getFullUserContext(email);
+    console.log("User Context:", user);
+
+    if (!user) {
+      return res.status(404).json({ status: "error", message: "User not found" });
+    }
+
+
+    console.log("Step 3: Generating tokens...");
+    console.log("JWT Secret exists:", !!config.jwtSecret);
 
     const accessToken = jwt.sign(
       { userId: user.account_id, userType: user.role_key },
@@ -116,16 +82,99 @@ export const verifyOtp = async (req: Request, res: Response) => {
       { expiresIn: "1h" }
     );
 
-    // Clean up used OTP
+    const refreshToken = jwt.sign(
+      { userId: user.account_id, tokenType: "refresh" },
+      config.jwtSecret,
+      { expiresIn: "7d" }
+    );
+
+
+    console.log("Step 4: Deleting used OTP...");
     await pool.query("DELETE FROM temp_otps WHERE email = ?", [email]);
+
+
+    console.log("Step 5: Storing refresh token...");
+    await pool.query(
+      "INSERT INTO refresh_tokens (account_id, token, expires_at) VALUES (?, ?, ?)",
+      [user.account_id, refreshToken, new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)]
+    );
+
+    console.log("=== VERIFY OTP SUCCESS ===");
 
     return res.json({
       status: "ok",
-      tokens: { access: accessToken }
+      user: {
+        id: user.account_id,
+        display_name: user.full_name,
+        phone: user.contact_no,
+        email: user.official_email,
+        user_type_id: user.role_id,
+        user_type_code: user.role_key,
+        user_type_name: user.role_label,
+      },
+      tokens: {
+        access: accessToken,
+        refresh: refreshToken,
+      },
     });
+  } catch (error: any) {
 
-  } catch (error) {
-    console.error("OTP Verification Error:", error);
+    console.error("=== VERIFY OTP ERROR ===");
+    console.error("Error Name:", error.name);
+    console.error("Error Message:", error.message);
+    console.error("Error Stack:", error.stack);
     return res.status(500).json({ status: "error", message: "Verification failed" });
+  }
+};
+
+
+export const refreshAccessToken = async (req: Request, res: Response) => {
+  const { refreshToken } = req.body || {};
+  const cookieToken = req.cookies?.refreshToken;
+  const token = refreshToken || cookieToken;
+
+  if (!token) {
+    return res.status(401).json({ status: "error", message: "Refresh token required" });
+  }
+
+  try {
+
+    const decoded: any = jwt.verify(token, config.jwtRefreshSecret || config.jwtSecret);
+
+
+    const [rows]: any = await pool.query(
+      "SELECT * FROM refresh_tokens WHERE account_id = ? AND token = ? AND expires_at > NOW()",
+      [decoded.userId, token]
+    );
+
+    if (!rows || rows.length === 0) {
+      return res.status(401).json({ status: "error", message: "Invalid refresh token" });
+    }
+
+
+    const [userRows]: any = await pool.query(
+      "SELECT account_id, role_key FROM account_holders WHERE account_id = ?",
+      [decoded.userId]
+    );
+
+    if (!userRows || userRows.length === 0) {
+      return res.status(404).json({ status: "error", message: "User not found" });
+    }
+
+
+    const newAccessToken = jwt.sign(
+      { userId: userRows[0].account_id, userType: userRows[0].role_key },
+      config.jwtSecret,
+      { expiresIn: "15m" }
+    );
+
+    return res.json({
+      status: "ok",
+      tokens: {
+        access: newAccessToken,
+      },
+    });
+  } catch (error) {
+    return res.status(401).json({ status: "error", message: "Invalid or expired refresh token" });
   }
 };

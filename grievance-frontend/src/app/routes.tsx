@@ -6,6 +6,8 @@ import GrievanceForm from "../pages/dashboard/GrievanceForm";
 import RequireOtp from "../pages/auth/RequireOtp";
 import SubmissionSuccess from "../components/grievance/SubmissionSuccess";
 import AllSubmissions from "../components/dashboard/AllSubmission";
+import GrievanceDetail from '../components/grievance/GrievanceDetail';
+
 
 export default function AppRoutes() {
   return (
@@ -34,6 +36,11 @@ export default function AppRoutes() {
         <Route
           path="/dashboard/application-status"
           element={<RequireOtp><SubmissionSuccess /></RequireOtp>}
+        />
+
+        <Route 
+          path="/dashboard/grievances/:id" 
+          element={<GrievanceDetail />} 
         />
 
 

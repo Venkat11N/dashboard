@@ -16,7 +16,7 @@ dist-ssr
 build
 docker
 mysql_data
-
+uploads
 
 # Environment Variables
 .env

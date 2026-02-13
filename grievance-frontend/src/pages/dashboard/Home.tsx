@@ -9,13 +9,6 @@ export default function Home() {
   const navigate = useNavigate();
   const { user } = useGovernance();
 
-  // const stats = [
-  //   { label: "Active Cases", value: "12", trend: "+2", icon: FileText, color: "bg-purple-500" },
-  //   { label: "Resolved", value: "45", trend: "+8", icon: CheckCircle, color: "bg-emerald-500" },
-  //   { label: "Pending", value: "3", trend: "-1", icon: Clock, color: "bg-amber-500" },
-  //   { label: "Critical", value: "1", trend: "0", icon: AlertCircle, color: "bg-red-500" }
-  // ];
-
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
@@ -47,32 +40,6 @@ export default function Home() {
             <div className="absolute bottom-0 left-1/2 -mb-16 w-96 h-96 bg-purple-400/20 rounded-full blur-3xl" />
           </div>
 
-          {/* Stats Grid */}
-          {/* <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {stats.map((stat, index) => {
-              const Icon = stat.icon;
-              return (
-                <div key={index} className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow border border-slate-100">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className={`${stat.color} p-3 rounded-xl text-white`}>
-                      <Icon className="w-5 h-5" />
-                    </div>
-                    <span className={`text-xs font-semibold ${
-                      stat.trend.startsWith('+') ? 'text-emerald-600' : 
-                      stat.trend.startsWith('-') ? 'text-red-600' : 
-                      'text-slate-400'
-                    }`}>
-                      {stat.trend !== "0" && stat.trend}
-                    </span>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-2xl font-bold text-slate-900">{stat.value}</p>
-                    <p className="text-sm text-slate-500">{stat.label}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div> */}
 
           {/* Main Content Area */}
           <div className="grid lg:grid-cols-3 gap-8">
@@ -131,17 +98,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Modules Section */}
-          {/* <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-slate-900">Service Modules</h2>
-              <button className="text-sm font-medium text-indigo-600 hover:text-indigo-700 inline-flex items-center gap-1">
-                Explore All
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-            <ModuleGrid />
-          </div> */}
 
         </div>
       </div>
