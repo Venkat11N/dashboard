@@ -1,5 +1,3 @@
-// src/controllers/grievance.controller.ts
-
 import { type Response } from 'express';
 import { pool } from '../db/connections.js';
 
@@ -14,7 +12,7 @@ interface AuthRequest {
   files?: Express.Multer.File[];
 }
 
-// ✅ Helper function to get category name
+
 const getCategoryName = async (categoryId: number): Promise<string> => {
   try {
     const [rows]: any = await pool.query(
@@ -27,7 +25,7 @@ const getCategoryName = async (categoryId: number): Promise<string> => {
   }
 };
 
-// ✅ Submit grievance WITHOUT files
+
 export const submitGrievance = async (req: AuthRequest, res: Response) => {
   console.log("=== SUBMIT GRIEVANCE ===");
   console.log("req.files:", req.files);
@@ -123,7 +121,7 @@ export const submitGrievance = async (req: AuthRequest, res: Response) => {
 };
 
 
-// ✅ Submit grievance WITH files
+
 export const submitGrievanceWithFiles = async (req: AuthRequest, res: Response) => {
   console.log("=== SUBMIT GRIEVANCE WITH FILES ===");
   
@@ -180,7 +178,7 @@ export const submitGrievanceWithFiles = async (req: AuthRequest, res: Response) 
     console.log("Reference:", reference_number);
     console.log("Subject:", subject);
 
-    // Insert grievance
+
     const [result]: any = await pool.query(
       `INSERT INTO grievances (
         reference_number,
@@ -209,7 +207,7 @@ export const submitGrievanceWithFiles = async (req: AuthRequest, res: Response) 
     const grievanceId = result.insertId;
     console.log("✅ Grievance Created! ID:", grievanceId);
 
-    // ✅ INSERT FILES INTO DATABASE
+
     const uploadedFiles: any[] = [];
     
     console.log("📁 Starting file insert... Files count:", files?.length || 0);
@@ -266,7 +264,76 @@ export const submitGrievanceWithFiles = async (req: AuthRequest, res: Response) 
   }
 };
 
-// ✅ Get my grievances (with category name)
+
+export const trackGrievance = async (req: AuthRequest, res: Response) => {
+  const { reference } = req.params;
+  const account_id = req.user?.userId;
+
+  console.log("=== TRACK GRIEVANCE ===");
+  console.log("Reference:", reference);
+  console.log("User ID:", account_id);
+
+  if (!account_id) {
+    return res.status(401).json({ status: "error", message: "Unauthorized" });
+  }
+
+  if (!reference) {
+    return res.status(400).json({ status: "error", message: "Reference number is required" });
+  }
+
+  try {
+    const [rows]: any = await pool.query(
+      `SELECT 
+        g.grievance_id,
+        g.reference_number,
+        g.subject,
+        g.description,
+        g.status,
+        g.priority,
+        g.created_at,
+        g.indos_number,
+        g.first_name,
+        g.last_name,
+        c.name AS category_name,
+        s.name AS subcategory_name
+      FROM grievances g
+      LEFT JOIN grievance_categories c ON g.category_id = c.category_id
+      LEFT JOIN grievance_subcategories s ON g.subcategory_id = s.subcategory_id
+      WHERE g.reference_number = ? AND g.account_id = ?`,
+      [reference.trim(), account_id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ 
+        status: "error", 
+        message: "Grievance not found or you don't have access" 
+      });
+    }
+
+
+    const [files]: any = await pool.query(
+      `SELECT id, file_name, file_path, file_type, created_at 
+       FROM grievance_files 
+       WHERE grievance_id = ?`,
+      [rows[0].grievance_id]
+    );
+
+    console.log("✅ Found grievance:", rows[0].reference_number);
+    console.log("   Files:", files.length);
+
+    res.json({
+      status: "ok",
+      data: {
+        ...rows[0],
+        files: files
+      }
+    });
+  } catch (error: any) {
+    console.error("❌ Track error:", error.message);
+    res.status(500).json({ status: "error", message: "Failed to track grievance" });
+  }
+};
+
 export const getMyGrievances = async (req: AuthRequest, res: Response) => {
   const account_id = req.user?.userId;
   const limit = req.query?.limit ? parseInt(req.query.limit as string) : 10;
@@ -307,7 +374,7 @@ export const getMyGrievances = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// ✅ Get grievance by ID (with category name)
+
 export const getGrievanceById = async (req: AuthRequest, res: Response) => {
   const account_id = req.user?.userId;
   const { id } = req.params;
@@ -345,7 +412,7 @@ export const getGrievanceById = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// ✅ Get grievance files
+
 export const getGrievanceFiles = async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   
@@ -360,7 +427,7 @@ export const getGrievanceFiles = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// ✅ Download file
+
 export const downloadGrievanceFile = async (req: AuthRequest, res: Response) => {
   const { fileId } = req.params;
   

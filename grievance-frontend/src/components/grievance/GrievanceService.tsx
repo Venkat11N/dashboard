@@ -1,5 +1,3 @@
-
-
 import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -17,7 +15,7 @@ export type Grievance = {
   updated_at?: string;
 };
 
-// Get auth token
+
 const getAuthToken = (): string | null => {
   const possibleKeys = [
     'token',
@@ -54,7 +52,7 @@ const apiClient = axios.create({
   }
 });
 
-// Request interceptor
+
 apiClient.interceptors.request.use(
   (config) => {
     const token = getAuthToken();
@@ -66,7 +64,7 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor
+
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -75,7 +73,7 @@ apiClient.interceptors.response.use(
   }
 );
 
-// ✅ FIXED: Get my grievances
+
 export async function getMyGrievances(limit?: number): Promise<Grievance[]> {
   try {
     const timestamp = Date.now();
@@ -94,7 +92,7 @@ export async function getMyGrievances(limit?: number): Promise<Grievance[]> {
   }
 }
 
-// Get single grievance
+
 export async function getGrievanceById(id: number): Promise<Grievance | null> {
   try {
     const response = await apiClient.get(`/grievances/${id}`);
@@ -110,7 +108,7 @@ export async function getGrievanceById(id: number): Promise<Grievance | null> {
   }
 }
 
-// Submit grievance
+
 export async function submitGrievance(data: any): Promise<{ success: boolean; reference_number?: string; message?: string }> {
   try {
     const response = await apiClient.post('/grievances', data);
