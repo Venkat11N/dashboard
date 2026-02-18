@@ -5,6 +5,7 @@ import config from "../config/index.js";
 import { pool } from "../db/connections.js";
 import { sendOtpEmail, saveOtpToDb, getFullUserContext } from "../services/auth.service.js";
 
+
 export const login = async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
@@ -26,7 +27,7 @@ export const login = async (req: Request, res: Response) => {
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 10 * 60000);
+    const expiresAt = new Date(Date.now() + 10 * 60000); // 10 minutes
 
     await saveOtpToDb(email, otp, expiresAt);
     await sendOtpEmail(email, otp);
@@ -37,6 +38,8 @@ export const login = async (req: Request, res: Response) => {
     return res.status(500).json({ status: "error", message: "Internal server error" });
   }
 };
+
+
 
 export const verifyOtp = async (req: Request, res: Response) => {
   const { email, otp_code } = req.body;
@@ -52,7 +55,6 @@ export const verifyOtp = async (req: Request, res: Response) => {
   try {
 
     console.log("Step 1: Checking OTP in database...");
-
     const [otpCheck]: any = await pool.query(
       "SELECT email, otp_code, expires_at FROM temp_otps WHERE email = ? AND otp_code = ? AND expires_at > NOW() LIMIT 1",
       [email, otp_code]
@@ -74,7 +76,7 @@ export const verifyOtp = async (req: Request, res: Response) => {
 
 
     console.log("Step 3: Generating tokens...");
-    console.log("JWT Secret exists:", !!config.jwtSecret);
+    
 
     const accessToken = jwt.sign(
       { userId: user.account_id, userType: user.role_key },
@@ -84,15 +86,15 @@ export const verifyOtp = async (req: Request, res: Response) => {
 
     const refreshToken = jwt.sign(
       { userId: user.account_id, tokenType: "refresh" },
-      config.jwtSecret,
+      config.jwtSecret, 
       { expiresIn: "7d" }
     );
 
-
+    // Step 4: Delete used OTP
     console.log("Step 4: Deleting used OTP...");
     await pool.query("DELETE FROM temp_otps WHERE email = ?", [email]);
 
-
+    // Step 5: Store refresh token
     console.log("Step 5: Storing refresh token...");
     await pool.query(
       "INSERT INTO refresh_tokens (account_id, token, expires_at) VALUES (?, ?, ?)",
@@ -109,7 +111,7 @@ export const verifyOtp = async (req: Request, res: Response) => {
         phone: user.contact_no,
         email: user.official_email,
         user_type_id: user.role_id,
-        user_type_code: user.role_key,
+        user_type_code: user.role_key,   
         user_type_name: user.role_label,
       },
       tokens: {
@@ -118,7 +120,6 @@ export const verifyOtp = async (req: Request, res: Response) => {
       },
     });
   } catch (error: any) {
-
     console.error("=== VERIFY OTP ERROR ===");
     console.error("Error Name:", error.name);
     console.error("Error Message:", error.message);
@@ -126,7 +127,6 @@ export const verifyOtp = async (req: Request, res: Response) => {
     return res.status(500).json({ status: "error", message: "Verification failed" });
   }
 };
-
 
 
 export const resendOtp = async (req: Request, res: Response) => {
@@ -137,7 +137,6 @@ export const resendOtp = async (req: Request, res: Response) => {
   }
 
   try {
-
     const [rows]: any = await pool.query(
       "SELECT account_id FROM account_holders WHERE official_email = ? LIMIT 1",
       [email]
@@ -147,14 +146,10 @@ export const resendOtp = async (req: Request, res: Response) => {
       return res.status(404).json({ status: "error", message: "User not found" });
     }
 
-
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60000); // 10 mins expiry
 
-
     await saveOtpToDb(email, otp, expiresAt);
-
-
     await sendOtpEmail(email, otp);
 
     return res.json({ status: "ok", message: "New OTP sent successfully" });
@@ -175,10 +170,9 @@ export const refreshAccessToken = async (req: Request, res: Response) => {
   }
 
   try {
-
     const decoded: any = jwt.verify(token, config.jwtRefreshSecret || config.jwtSecret);
 
-
+    // Verify token exists in DB and is valid
     const [rows]: any = await pool.query(
       "SELECT * FROM refresh_tokens WHERE account_id = ? AND token = ? AND expires_at > NOW()",
       [decoded.userId, token]
@@ -188,9 +182,12 @@ export const refreshAccessToken = async (req: Request, res: Response) => {
       return res.status(401).json({ status: "error", message: "Invalid refresh token" });
     }
 
-
+    // Get user details for new token (need role_key)
     const [userRows]: any = await pool.query(
-      "SELECT account_id, role_key FROM account_holders WHERE account_id = ?",
+      `SELECT a.account_id, r.role_key 
+       FROM account_holders a
+       LEFT JOIN portal_roles r ON a.role_id = r.role_id
+       WHERE a.account_id = ?`,
       [decoded.userId]
     );
 
@@ -202,7 +199,7 @@ export const refreshAccessToken = async (req: Request, res: Response) => {
     const newAccessToken = jwt.sign(
       { userId: userRows[0].account_id, userType: userRows[0].role_key },
       config.jwtSecret,
-      { expiresIn: "15m" }
+      { expiresIn: "1h" } 
     );
 
     return res.json({

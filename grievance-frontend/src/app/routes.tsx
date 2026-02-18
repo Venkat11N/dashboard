@@ -10,9 +10,8 @@ import GrievanceDetail from '../components/grievance/GrievanceDetail';
 import TrackStatus from '../pages/dashboard/TrackPages';
 import ViewDocuments from '../pages/dashboard/ViewDocuments';
 import Profile from '../pages/dashboard/Profile';
-
-
-
+import AdminDashboard from "../pages/admin/AdminDashboard";
+import AdminGrievanceList from "../pages/admin/AdminGrievanceList";
 
 
 export default function AppRoutes() {
@@ -55,6 +54,8 @@ export default function AppRoutes() {
         <Route path="/dashboard/track" element={<TrackStatus />} />
         <Route path="/dashboard/documents" element={<ViewDocuments />} />
         <Route path="/dashboard/profile" element={<Profile />} />
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route path="/admin/grievances" element={<AdminGrievanceList />} />
       </Routes>
     </BrowserRouter>
   );

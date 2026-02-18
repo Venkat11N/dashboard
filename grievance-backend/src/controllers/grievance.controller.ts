@@ -64,7 +64,7 @@ export const submitGrievance = async (req: AuthRequest, res: Response) => {
     const randomStr = Math.random().toString(36).substring(2, 5).toUpperCase();
     const reference_number = `GRV-${year}-${timestamp}-${randomStr}`;
 
-    // ✅ Get category name for subject
+
     const categoryIdNum = category_id ? parseInt(category_id) : null;
     const categoryName = categoryIdNum ? await getCategoryName(categoryIdNum) : 'General Grievance';
     const subject = categoryName;
@@ -505,3 +505,4 @@ export const updateGrievanceStatus = async (req: AuthRequest, res: Response) => 
     res.status(500).json({ status: "error", message: "Failed to update status"})
   }
 };
+
