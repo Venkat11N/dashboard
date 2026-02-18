@@ -1,13 +1,29 @@
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import GrievanceTable from "../../components/grievance/GrievanceTable";
-import ModuleGrid from "../dashboard/ModuleGrid";
 import { useGovernance } from "../../core/GovernanceContext";
-import { FileText, TrendingUp, Clock, CheckCircle, AlertCircle, ChevronRight, Sparkles, Grid3x3 } from "lucide-react";
+import { 
+  FileText, TrendingUp, ChevronRight, Sparkles, 
+  Grid3x3, Search, FolderOpen
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function Home() {
   const navigate = useNavigate();
   const { user } = useGovernance();
+
+  // Quick Actions Configuration
+  const quickActions = [
+    {
+      label: 'Track Status',
+      icon: Search,
+      path: '/dashboard/track'
+    },
+    {
+      label: 'View Documents',
+      icon: FolderOpen,
+      path: '/dashboard/documents'
+    }
+  ];
 
   return (
     <DashboardLayout>
@@ -22,7 +38,7 @@ export default function Home() {
                 <span className="text-sm font-semibold opacity-90">Maritime Governance Portal</span>
               </div>
               <h1 className="text-3xl md:text-5xl font-bold mb-3">
-                Good {new Date().getHours() < 12 ? "Morning" : new Date().getHours() < 18 ? "Afternoon" : "Evening"}, {user.name.split(" ")[0]}!
+                Good {new Date().getHours() < 12 ? "Morning" : new Date().getHours() < 18 ? "Afternoon" : "Evening"}, {user.name?.split(" ")[0] || 'User'}!
               </h1>
               <p className="text-lg opacity-90 mb-8 max-w-2xl">
                 Your centralized hub for maritime grievance management and resolution tracking.
@@ -51,12 +67,16 @@ export default function Home() {
                   <h3 className="font-semibold text-slate-900">Quick Actions</h3>
                 </div>
                 <div className="space-y-2">
-                  {[ 'Track Status', 'View Documents'].map((action, idx) => (
+                  {quickActions.map((action, idx) => (
                     <button
                       key={idx}
+                      onClick={() => navigate(action.path)} // ✅ Use navigate() here
                       className="w-full text-left px-4 py-3 rounded-xl hover:bg-slate-50 transition-colors flex items-center justify-between group"
                     >
-                      <span className="text-sm font-medium text-slate-700">{action}</span>
+                      <div className="flex items-center gap-3">
+                        <action.icon className="w-4 h-4 text-slate-500 group-hover:text-indigo-600" />
+                        <span className="text-sm font-medium text-slate-700">{action.label}</span>
+                      </div>
                       <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-indigo-600 transition-colors" />
                     </button>
                   ))}
@@ -97,8 +117,6 @@ export default function Home() {
               </div>
             </div>
           </div>
-
-
         </div>
       </div>
     </DashboardLayout>

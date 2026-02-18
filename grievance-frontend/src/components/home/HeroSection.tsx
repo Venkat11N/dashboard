@@ -1,7 +1,6 @@
 import {FileText, ChevronRight, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getGreeting } from "../utils/grievanceHelpers";
-import { Grievance } from '../grievance/GrievanceService';
 
 
 
@@ -9,7 +8,7 @@ interface HeroSectionProps {
   userName: string;
 }
 
-export default function HeroSection ({ userName } HeroSectionProps){
+export default function HeroSection ({ userName }: HeroSectionProps){
   const navigate = useNavigate();
   const firstName = userName?.split(" ")[0] || "User";
 
@@ -30,7 +29,7 @@ export default function HeroSection ({ userName } HeroSectionProps){
 
         <button
           onClick={() => navigate('/dashboard/grievacnes/new')}
-          className="bg-white text-indigo-600  px-6 py-3 rounded-sl font-semibold hover:-translate-y-1 transition-all duration-200 inline-flex items-center gap-2"
+          className="bg-slate-800 text-white px-5 py-3 rounded-xl font-semibold hover:bg-slate-700 transition-colors inline-flex items-center gap-2 shadow-sm"
         >
           <FileText className="w-5 h-5"/>
           Submit New Grievance

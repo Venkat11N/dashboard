@@ -1,6 +1,7 @@
 import { type Response } from 'express';
 import { pool } from '../db/connections.js';
 
+
 interface AuthRequest {
   user?: {
     userId: number;
@@ -264,76 +265,6 @@ export const submitGrievanceWithFiles = async (req: AuthRequest, res: Response) 
   }
 };
 
-
-export const trackGrievance = async (req: AuthRequest, res: Response) => {
-  const { reference } = req.params;
-  const account_id = req.user?.userId;
-
-  console.log("=== TRACK GRIEVANCE ===");
-  console.log("Reference:", reference);
-  console.log("User ID:", account_id);
-
-  if (!account_id) {
-    return res.status(401).json({ status: "error", message: "Unauthorized" });
-  }
-
-  if (!reference) {
-    return res.status(400).json({ status: "error", message: "Reference number is required" });
-  }
-
-  try {
-    const [rows]: any = await pool.query(
-      `SELECT 
-        g.grievance_id,
-        g.reference_number,
-        g.subject,
-        g.description,
-        g.status,
-        g.priority,
-        g.created_at,
-        g.indos_number,
-        g.first_name,
-        g.last_name,
-        c.name AS category_name,
-        s.name AS subcategory_name
-      FROM grievances g
-      LEFT JOIN grievance_categories c ON g.category_id = c.category_id
-      LEFT JOIN grievance_subcategories s ON g.subcategory_id = s.subcategory_id
-      WHERE g.reference_number = ? AND g.account_id = ?`,
-      [reference.trim(), account_id]
-    );
-
-    if (rows.length === 0) {
-      return res.status(404).json({ 
-        status: "error", 
-        message: "Grievance not found or you don't have access" 
-      });
-    }
-
-
-    const [files]: any = await pool.query(
-      `SELECT id, file_name, file_path, file_type, created_at 
-       FROM grievance_files 
-       WHERE grievance_id = ?`,
-      [rows[0].grievance_id]
-    );
-
-    console.log("✅ Found grievance:", rows[0].reference_number);
-    console.log("   Files:", files.length);
-
-    res.json({
-      status: "ok",
-      data: {
-        ...rows[0],
-        files: files
-      }
-    });
-  } catch (error: any) {
-    console.error("❌ Track error:", error.message);
-    res.status(500).json({ status: "error", message: "Failed to track grievance" });
-  }
-};
-
 export const getMyGrievances = async (req: AuthRequest, res: Response) => {
   const account_id = req.user?.userId;
   const limit = req.query?.limit ? parseInt(req.query.limit as string) : 10;
@@ -348,31 +279,26 @@ export const getMyGrievances = async (req: AuthRequest, res: Response) => {
         g.grievance_id AS id,
         g.reference_number,
         g.subject,
-        g.description,
         g.status, 
         g.priority, 
         g.created_at,
-        g.category_id,
-        g.subcategory_id,
-        c.name AS category_name,
-        s.name AS subcategory_name
+        c.name AS category_name
       FROM grievances g
       LEFT JOIN grievance_categories c ON g.category_id = c.category_id
-      LEFT JOIN grievance_subcategories s ON g.subcategory_id = s.subcategory_id
       WHERE g.account_id = ? 
       ORDER BY g.created_at DESC
       LIMIT ?`,
       [account_id, limit]
     );
 
-    console.log(`✅ Found ${rows.length} grievances`);
-
+    console.log(`✅ Found ${rows.length} grievances for user ${account_id}`);
     res.json({ status: "ok", data: rows, count: rows.length });
   } catch (error: any) {
-    console.error("❌ Error:", error.message);
+    console.error("❌ Error fetching my grievances:", error.message);
     res.status(500).json({ status: "error", message: "Failed to fetch grievances" });
   }
 };
+
 
 
 export const getGrievanceById = async (req: AuthRequest, res: Response) => {
@@ -407,8 +333,82 @@ export const getGrievanceById = async (req: AuthRequest, res: Response) => {
 
     res.json({ status: "ok", data: { ...rows[0], files } });
   } catch (error: any) {
-    console.error("❌ Error:", error.message);
+    console.error("❌ Error fetching grievance by ID:", error.message);
     res.status(500).json({ status: "error", message: "Failed to fetch grievance" });
+  }
+};
+
+export const trackGrievance = async (req: AuthRequest, res: Response) => {
+  const { reference } = req.params;
+  const account_id = req.user?.userId;
+
+  console.log("\n🔍 === DIAGNOSTIC MODE ===");
+  
+  try {
+    // 1. Check 'grievances' table columns
+    const [gCols]: any = await pool.query("SHOW COLUMNS FROM grievances");
+    const gColNames = gCols.map((c: any) => c.Field);
+    console.log("📊 Grievances Table Columns:", gColNames);
+
+    // 2. Check 'grievance_categories' table columns
+    const [cCols]: any = await pool.query("SHOW COLUMNS FROM grievance_categories");
+    const cColNames = cCols.map((c: any) => c.Field);
+    console.log("📊 Categories Table Columns:", cColNames);
+
+    // 3. Check 'grievance_subcategories' table columns
+    const [sCols]: any = await pool.query("SHOW COLUMNS FROM grievance_subcategories");
+    const sColNames = sCols.map((c: any) => c.Field);
+    console.log("📊 Subcategories Table Columns:", sColNames);
+
+    // 4. Determine correct ID column names based on DB reality
+    const catIdCol = cColNames.includes('category_id') ? 'category_id' : 'id';
+    const subIdCol = sColNames.includes('subcategory_id') ? 'subcategory_id' : 'id';
+    
+    console.log(`💡 Detected ID columns: Category=[${catIdCol}], Subcategory=[${subIdCol}]`);
+
+    // 5. Build query dynamically using the correct columns
+    const query = `
+      SELECT 
+        g.*, 
+        c.name AS category_name,
+        s.name AS subcategory_name
+      FROM grievances g
+      LEFT JOIN grievance_categories c ON g.category_id = c.${catIdCol}
+      LEFT JOIN grievance_subcategories s ON g.subcategory_id = s.${subIdCol}
+      WHERE g.reference_number = ? AND g.account_id = ?
+    `;
+
+    console.log("🚀 Executing Dynamic Query...");
+    const [rows]: any = await pool.query(query, [reference.trim(), account_id]);
+
+    if (rows.length === 0) {
+      console.log("❌ Not Found");
+      return res.status(404).json({ status: "error", message: "Grievance not found" });
+    }
+
+    console.log("✅ Grievance Found!");
+
+    // 6. Get files (checking columns first to be safe)
+    const [fCols]: any = await pool.query("SHOW COLUMNS FROM grievance_files");
+    const fColNames = fCols.map((c: any) => c.Field);
+    const fileIdCol = fColNames.includes('file_id') ? 'file_id' : 'id';
+
+    const [files]: any = await pool.query(
+      `SELECT ${fileIdCol} as id, file_name, file_path, file_type, created_at 
+       FROM grievance_files 
+       WHERE grievance_id = ?`,
+      [rows[0].grievance_id] // Assuming grievance_id exists based on step 1 output
+    );
+
+    res.json({
+      status: "ok",
+      data: { ...rows[0], files }
+    });
+
+  } catch (error: any) {
+    console.error("💥 CRITICAL DB ERROR:", error.message);
+    console.error("   SQL:", error.sql);
+    res.status(500).json({ status: "error", message: error.message });
   }
 };
 
@@ -444,5 +444,64 @@ export const downloadGrievanceFile = async (req: AuthRequest, res: Response) => 
     res.download(files[0].file_path, files[0].file_name);
   } catch (error: any) {
     res.status(500).json({ status: "error", message: "Failed to download" });
+  }
+};
+
+export const getAllGrievancesAdmin = async (req: AuthRequest, res: Response) => {
+  const status = req.query.status as string;
+  const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+
+  try {
+    let query = `
+    SELECT
+      g.grievacne_id,
+      g.reference_number,
+      g.subject,
+      g.status,
+      g.priority,
+      g.created_at,
+      c.name AS category_name,
+      a.full_name AS applicant_name
+    FROM grievances g
+    LEFT JOIN grievance_categories c ON g.category_id = c.category_id
+    LEFT JOIN account_holders a ON g.account_id = a.account_id
+  `;
+
+  const params: any[] = [];
+
+  if (status && status !== 'ALL') {
+    query += `WHERE g.status = ?`;
+    params.push(status);
+  }
+
+  query += `ORDER BY g.created_at DESC LIMIT ?`
+  params.push(limit); 
+  
+  const [rows]: any = await pool.query(query, params);
+
+  res.json({ status: "ok", data: rows });
+  } catch (error) {
+    console.error("Admin Fetch Error:", error);
+    res.status(500).json({ status: "error", message: "Failed to fetch grievances"})
+  }
+}
+
+export const updateGrievanceStatus = async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+  const { status, remarks } = req.body;
+
+  if (!status) {
+    return res.status(400).json({ status: "error", message: "Status is required"});
+  }
+
+  try {
+    await pool.query(
+      "UPDATE grievacnes SET status = ?, updated_at = NOW() WHERE grievance_id = ?",
+      [status ,id]
+    );
+    res.json({ status: "ok", message: "Status updated successfully" });
+  } catch (error: any) {
+    console.error("Update Error:", error);
+    res.status(500).json({ status: "error", message: "Failed to update status"})
   }
 };

@@ -1,11 +1,15 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { API_BASE_URL } from "../../config/api"; // Centralized config
+import { useGovernance } from "../../core/GovernanceContext";
 
 export default function VerifyOtp() {
   const navigate = useNavigate();
   const location = useLocation();
   const email = location.state?.email;
+  
+
+  const { setUserFromLogin } = useGovernance();
 
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
@@ -28,7 +32,7 @@ export default function VerifyOtp() {
     setErrorMsg("");
 
     try {
-      // 1. Verify OTP with your Node.js backend
+
       const response = await fetch(`${API_BASE_URL}/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -38,11 +42,19 @@ export default function VerifyOtp() {
       const result = await response.json();
 
       if (result.status === 'ok') {
-        // 2. Store the JWT token returned by the server
+
+        localStorage.setItem('token', result.tokens.access);
         localStorage.setItem('accessToken', result.tokens.access);
+        localStorage.setItem('refreshToken', result.tokens.refresh); // Store refresh token if available
         
-        // 3. Mark OTP as verified for the Auth Guard
+
         sessionStorage.setItem("otp_verified", "true");
+        
+
+        if (result.user) {
+          setUserFromLogin(result.user);
+        }
+
         setStatus("success");
         
         setTimeout(() => {
@@ -66,7 +78,7 @@ export default function VerifyOtp() {
     setErrorMsg("");
 
     try {
-      // 2. Request a new OTP from the backend
+
       const response = await fetch(`${API_BASE_URL}/resend-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

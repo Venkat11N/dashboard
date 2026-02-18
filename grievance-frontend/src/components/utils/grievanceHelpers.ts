@@ -23,6 +23,7 @@ export const getFileIcon = (fileType: string): string => {
   return '📎';
 };
 
+
 export const trackGrievance = async (reference: string)=> {
   const token = getAuthToken();
 
@@ -48,7 +49,7 @@ export const downloadFile = async (fileId: number, fileName: string) => {
   );
 
   const url = window.URL.createObjectURL(new Blob([response.data]));
-  const link : = document.createElement('a');
+  const link = document.createElement('a');
   link.href = url;
   link.setAttribute('downlaod', fileName);
   document.body.appendChild(link);

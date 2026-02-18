@@ -1,9 +1,10 @@
 import { NavLink } from "react-router-dom";
 import { useSidebar } from "../../context/SidebarContext";
 import { useGovernance } from '../../core/GovernanceContext';
-import { ChevronLeft, ChevronRight, LayoutDashboard, ShieldAlert, FileCheck, Anchor, Users } from "lucide-react";
-
-
+import { 
+  ChevronLeft, ChevronRight, LayoutDashboard, 
+  ShieldAlert, FileCheck, Users, Anchor 
+} from "lucide-react";
 
 export default function Sidebar() {
   const { collapsed, toggle } = useSidebar();
@@ -11,44 +12,45 @@ export default function Sidebar() {
 
   return (
     <aside
-      className={`bg-slate-900 text-slate-300 h-screen sticky top-0 transition-all duration-300 flex flex-col ${
+      className={`bg-slate-900 text-slate-400 h-screen sticky top-0 transition-all duration-300 flex flex-col border-r border-slate-800 ${
         collapsed ? "w-20" : "w-64"
       }`}
     >
-
-      <div className="h-16 flex items-center justify-between px-6 border-b border-slate-800/50 bg-slate-950/20">
+      {/* Header */}
+      <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800 bg-slate-900">
         {!collapsed && (
-          <div className="flex items-center gap-2 animate-in fade-in duration-300">
-           
-            <span className="font-bold text-white tracking-tighter"></span>
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-blue-600 rounded-lg">
+              <Anchor size={18} className="text-white" />
+            </div>
           </div>
         )}
         <button 
           onClick={toggle}
-          className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+          className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors ml-auto"
         >
           {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
         </button>
       </div>
 
-      <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto custom-scrollbar">
-          {!collapsed && (
-            <p className="text-[10px] text-slate-500 uppercase font-black tracking-[0.2em] px-3 mb-4">
-              Main Modules
-            </p>
-          )}
-
+      {/* Navigation */}
+      <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
+        {!collapsed && (
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 mb-4">
+            Menu
+          </p>
+        )}
         
         <SidebarLink
-          to="/dashbaord"
+          to="/dashboard"
           icon={<LayoutDashboard size={20}/>}
-          label="Command Center"
+          label="Dashboard"
           collapsed={collapsed}
         />
 
         {hasModuleAccess('GRIEVANCE') && (
           <SidebarLink
-            to="/dashbaord/grievances"
+            to="/dashboard/grievances"
             icon={<Users size={20}/>}
             label="Grievances"
             collapsed={collapsed}
@@ -57,7 +59,7 @@ export default function Sidebar() {
           
         {hasModuleAccess('CRISIS') && (
           <SidebarLink
-            to="/dashbaord/crisis"
+            to="/dashboard/crisis"
             icon={<ShieldAlert size={20} />}
             label="Crisis Management"
             collapsed={collapsed}
@@ -67,25 +69,25 @@ export default function Sidebar() {
 
         {hasModuleAccess('MTI_COMPLIANCE') && (
           <SidebarLink
-            to="/dashbaord/compliance"
+            to="/dashboard/compliance"
             icon={<FileCheck size={20} />}
-            label="MTI Compliance"
+            label="Compliance"
             collapsed={collapsed}
           />
         )}
       </nav>
 
-
-      <div className="p-4 bg-slate-950/40 border-t border-slate-800/50">
+      {/* User Footer */}
+      <div className="p-4 border-t border-slate-800 bg-slate-900">
         <div className={`flex items-center gap-3 ${collapsed ? "justify-center" : ""}`}>
-          <div className="w-10 h-10 rounded-xl bg-linear-to-br from-blue-600 to-blue-800 flex-shrink-0 flex items-center justify-center text-white font-bold text-lg">
-            {user.name.charAt(0)}
+          <div className="w-9 h-9 rounded-full bg-slate-700 flex flex-shrink-0 items-center justify-center text-white font-medium">
+            {user.name?.charAt(0) || 'U'}
           </div>
           {!collapsed && (
-            <div className="overflow-hidden animate-in slide-in-from-left-2">
-              <p className="text-sm font-semibold text-white truncate">{user.name}</p>
-              <p className="text-[10px] uppercase tracking-widest text-blue-500 font-black">
-                {user.actorGroup.replace('_', ' ')}
+            <div className="overflow-hidden">
+              <p className="text-sm font-medium text-slate-200 truncate">{user.name || 'User'}</p>
+              <p className="text-xs text-slate-500 truncate capitalize">
+                {user.actorGroup?.toLowerCase().replace('_', ' ') || 'Guest'}
               </p>
             </div>
           )}
@@ -96,22 +98,21 @@ export default function Sidebar() {
 }
 
 function SidebarLink({ to, icon, label, collapsed, isCrisis = false} : any) {
-  const baseClass = "flex items-center gap-3 p-3 rounded-xl transition-all duration-200 group mb-1";
-  const activeClass = isCrisis
-    ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
-    : "bg-blue-600 text-white shadow-lg shadow-blue-900/20";
-  const idleClass = "text-slate-400 hover:bg-slate-800 hover:text-white";
-
   return (
     <NavLink
       to={to}
-      className={({ isActive }) => `${baseClass} ${isActive ? activeClass : idleClass}`}
+      end={to === "/dashboard"} // Only exact match for dashboard home
+      className={({ isActive }) => `
+        flex items-center gap-3 p-3 rounded-lg transition-all duration-200 group mb-1
+        ${isActive 
+          ? "bg-blue-600 text-white shadow-sm" 
+          : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+        }
+        ${isCrisis && isActive ? "bg-amber-600" : ""}
+      `}
     >
       <div className={`${collapsed ? "mx-auto" : ""}`}>{icon}</div>
-      {!collapsed && <span className="text-sm font-semibold tracking-wide">{label}</span>}
-      {isCrisis && !collapsed && (
-        <span className="ml-auto w-2 h-2 rounded-full bg-amber-500 animate-pulse"/>
-      )}
+      {!collapsed && <span className="text-sm font-medium">{label}</span>}
     </NavLink>
   );
 }

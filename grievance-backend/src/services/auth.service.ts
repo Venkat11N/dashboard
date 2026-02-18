@@ -33,10 +33,11 @@ export const getFullUserContext = async (email: string) => {
       r.role_id, r.role_key, r.role_label,
       s.pass_hash
     FROM account_holders a
-    INNER JOIN portal_roles r ON a.role_id = r.role_id
-    INNER JOIN account_security s ON a.account_id = s.account_id
+    LEFT JOIN portal_roles r ON a.role_id = r.role_id
+    LEFT JOIN account_security s ON a.account_id = s.account_id
     WHERE a.official_email = ?`, 
     [email]
   );
+  console.log("Full User Query Result:", rows);
   return rows[0];
 };

@@ -7,6 +7,12 @@ import RequireOtp from "../pages/auth/RequireOtp";
 import SubmissionSuccess from "../components/grievance/SubmissionSuccess";
 import AllSubmissions from "../components/dashboard/AllSubmission";
 import GrievanceDetail from '../components/grievance/GrievanceDetail';
+import TrackStatus from '../pages/dashboard/TrackPages';
+import ViewDocuments from '../pages/dashboard/ViewDocuments';
+import Profile from '../pages/dashboard/Profile';
+
+
+
 
 
 export default function AppRoutes() {
@@ -46,6 +52,9 @@ export default function AppRoutes() {
 
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="/dashboard/track" element={<TrackStatus />} />
+        <Route path="/dashboard/documents" element={<ViewDocuments />} />
+        <Route path="/dashboard/profile" element={<Profile />} />
       </Routes>
     </BrowserRouter>
   );

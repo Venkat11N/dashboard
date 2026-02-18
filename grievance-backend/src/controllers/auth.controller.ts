@@ -128,6 +128,43 @@ export const verifyOtp = async (req: Request, res: Response) => {
 };
 
 
+
+export const resendOtp = async (req: Request, res: Response) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ status: "error", message: "Email is required" });
+  }
+
+  try {
+
+    const [rows]: any = await pool.query(
+      "SELECT account_id FROM account_holders WHERE official_email = ? LIMIT 1",
+      [email]
+    );
+
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({ status: "error", message: "User not found" });
+    }
+
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60000); // 10 mins expiry
+
+
+    await saveOtpToDb(email, otp, expiresAt);
+
+
+    await sendOtpEmail(email, otp);
+
+    return res.json({ status: "ok", message: "New OTP sent successfully" });
+  } catch (error) {
+    console.error("Resend OTP error:", error);
+    return res.status(500).json({ status: "error", message: "Failed to resend OTP" });
+  }
+};
+
+
 export const refreshAccessToken = async (req: Request, res: Response) => {
   const { refreshToken } = req.body || {};
   const cookieToken = req.cookies?.refreshToken;

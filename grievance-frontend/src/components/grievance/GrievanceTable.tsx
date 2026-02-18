@@ -1,5 +1,3 @@
-// components/grievance/GrievanceTable.tsx
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getMyGrievances, type Grievance } from '../../components/grievance/GrievanceService';
