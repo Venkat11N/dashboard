@@ -1,10 +1,13 @@
 import Navbar from "./Navbar";
 import Sidebar from "./Sidebar";
+import { useGovernance } from "../../core/GovernanceContext";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const { user } = useGovernance();
+  const isAdmin = user.actorGroup === 'DGS_OFFICER' || user.roles.includes('ADMIN');
   return (
     <div className="flex min-h-screen bg-slate-50">
-      <Sidebar />
+      <Sidebar isAdmin={isAdmin} />
       <div className="flex-1 flex flex-col">
         <Navbar />
         

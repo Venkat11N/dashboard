@@ -447,44 +447,52 @@ export const downloadGrievanceFile = async (req: AuthRequest, res: Response) => 
   }
 };
 
+
 export const getAllGrievancesAdmin = async (req: AuthRequest, res: Response) => {
   const status = req.query.status as string;
-  const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+  
+  console.log("\n=== ADMIN FETCH DEBUG ===");
+  console.log("Requested Status Filter:", status);
+  console.log("Requester User ID:", req.user?.userId);
 
   try {
     let query = `
-    SELECT
-      g.grievacne_id,
-      g.reference_number,
-      g.subject,
-      g.status,
-      g.priority,
-      g.created_at,
-      c.name AS category_name,
-      a.full_name AS applicant_name
-    FROM grievances g
-    LEFT JOIN grievance_categories c ON g.category_id = c.category_id
-    LEFT JOIN account_holders a ON g.account_id = a.account_id
-  `;
+      SELECT 
+        g.grievance_id,
+        g.reference_number,
+        g.subject,
+        g.status,
+        g.created_at,
+        a.full_name AS applicant_name
+      FROM grievances g
+      LEFT JOIN account_holders a ON g.account_id = a.account_id
+    `;
 
-  const params: any[] = [];
+    const params: any[] = [];
 
-  if (status && status !== 'ALL') {
-    query += `WHERE g.status = ?`;
-    params.push(status);
+    if (status && status !== 'ALL' && status !== 'undefined') {
+      query += ` WHERE g.status = ?`;
+      params.push(status);
+    }
+
+    query += ` ORDER BY g.created_at DESC LIMIT 50`;
+
+    console.log("Executing SQL:", query);
+    console.log("Params:", params);
+
+    const [rows]: any = await pool.query(query, params);
+
+    console.log("Rows Found:", rows.length);
+    if (rows.length > 0) {
+      console.log("First Row Sample:", rows[0]);
+    }
+
+    res.json({ status: "ok", data: rows });
+  } catch (error: any) {
+    console.error("❌ Admin API Error:", error.message);
+    res.status(500).json({ status: "error", message: error.message });
   }
-
-  query += `ORDER BY g.created_at DESC LIMIT ?`
-  params.push(limit); 
-  
-  const [rows]: any = await pool.query(query, params);
-
-  res.json({ status: "ok", data: rows });
-  } catch (error) {
-    console.error("Admin Fetch Error:", error);
-    res.status(500).json({ status: "error", message: "Failed to fetch grievances"})
-  }
-}
+};
 
 export const updateGrievanceStatus = async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
@@ -505,4 +513,3 @@ export const updateGrievanceStatus = async (req: AuthRequest, res: Response) => 
     res.status(500).json({ status: "error", message: "Failed to update status"})
   }
 };
-

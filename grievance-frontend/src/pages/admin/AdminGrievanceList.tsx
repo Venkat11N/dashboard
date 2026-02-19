@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import Sidebar from '../../components/layout/Sidebar';
+import Navbar from '../../components/layout/Navbar';
+import { SidebarProvider } from '../../context/SidebarContext';
 import AdminLayout from '../../components/layout/AdminLayout';
-import { Eye, Filter } from "lucide-react";
+import { Eye, Filter, Loader2 } from "lucide-react";
 import axios from 'axios';
 import { useNavigate } from "react-router-dom"
-
 
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -11,21 +13,27 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 export default function AdminGrievanceList() {
   const navigate = useNavigate();
   const [grievances, setGrievances] = useState([]);
+  const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('ALL');
 
   useEffect(() => {
-    fetchGrievacnes();
+    fetchGrievances();
   }, [filter]);
 
   const fetchGrievances = async () => {
+    setLoading(true);
     try {
       const token = localStorage.getItem('token');
+      console.log("Fetching Admin Grievances...")
       const res = await axios.get(`${API_BASE_URL}/admin/grievances?status=${filter}`, {
         headers: { Authorization: `Bearer ${token} `}
       });
-      if (res.data.status === 'ok') setGriievances(res.data.data);
-
+      if (res.data.status === 'ok') {
+       console.log("Admin Data received:", res.data.data.length); 
+        setGrievances(res.data.data);
+      }
     } catch (e) { console.error(e);}
+    finally { setLoading(false)}
   };
 
   return (

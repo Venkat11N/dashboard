@@ -27,7 +27,7 @@ export const login = async (req: Request, res: Response) => {
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 10 * 60000); // 10 minutes
+    const expiresAt = new Date(Date.now() + 10 * 60000); 
 
     await saveOtpToDb(email, otp, expiresAt);
     await sendOtpEmail(email, otp);

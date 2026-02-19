@@ -45,7 +45,7 @@ export default function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
         )}
 
         {isAdmin ? (
-          // ✅ ADMIN LINKS ONLY
+
           <>
             <SidebarLink 
               to="/admin/dashboard" 
@@ -67,7 +67,7 @@ export default function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
             />
           </>
         ) : (
-          // ✅ USER LINKS ONLY
+
           <>
             <SidebarLink
               to="/dashboard"

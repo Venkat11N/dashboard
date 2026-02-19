@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { API_BASE_URL } from "../../config/api"; // Centralized config
+import { API_BASE_URL } from "../../config/api"; 
 import { useGovernance } from "../../core/GovernanceContext";
 
 export default function VerifyOtp() {
@@ -32,7 +32,6 @@ export default function VerifyOtp() {
     setErrorMsg("");
 
     try {
-
       const response = await fetch(`${API_BASE_URL}/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -45,7 +44,7 @@ export default function VerifyOtp() {
 
         localStorage.setItem('token', result.tokens.access);
         localStorage.setItem('accessToken', result.tokens.access);
-        localStorage.setItem('refreshToken', result.tokens.refresh); // Store refresh token if available
+        localStorage.setItem('refreshToken', result.tokens.refresh);
         
 
         sessionStorage.setItem("otp_verified", "true");
@@ -53,13 +52,38 @@ export default function VerifyOtp() {
 
         if (result.user) {
           setUserFromLogin(result.user);
+        console.log("LOGIN SUCCESS:", result);
+        console.log("User Type Code:", result.user.user_type_code);
+        console.log("Role Key:", result.user.role_key);
+
+        const role = result.user.user_type_code || result.user.role_key;
+        console.log("Detected Role:", role);
+
+        if (role === 'ADMIN') {
+             console.log("Attempting navigate to ADMIN");
+             navigate("/admin/dashboard", { replace: true });
+        } else {
+             console.log("Attempting navigate to USER");
+             navigate("/dashboard", { replace: true });
+        }
         }
 
         setStatus("success");
         
+
         setTimeout(() => {
-          navigate("/dashboard", { replace: true });
+
+          const role = result.user.user_type_code || result.user.role_key;
+          
+          if (role === 'ADMIN') {
+            console.log("Redirecting to Admin Dashboard");
+            navigate("/admin/dashboard", { replace: true });
+          } else {
+            console.log("Redirecting to User Dashboard");
+            navigate("/dashboard", { replace: true });
+          }
         }, 800);
+
       } else {
         setErrorMsg(result.message || "Invalid or expired code.");
         setStatus("error");

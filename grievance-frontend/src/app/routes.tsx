@@ -12,6 +12,9 @@ import ViewDocuments from '../pages/dashboard/ViewDocuments';
 import Profile from '../pages/dashboard/Profile';
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import AdminGrievanceList from "../pages/admin/AdminGrievanceList";
+import AdminReports from '../pages/admin/AdminReports';
+import AdminGrievanceDetail from '../pages/admin/AdminGrivanceDetail';
+
 
 
 export default function AppRoutes() {
@@ -56,6 +59,9 @@ export default function AppRoutes() {
         <Route path="/dashboard/profile" element={<Profile />} />
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/admin/grievances" element={<AdminGrievanceList />} />
+        <Route path="/admin/grievances" element={<AdminGrievanceList />} />
+        <Route path="/admin/reports" element={<AdminReports />} />
+        <Route path="/admin/grievances/:id" element={<AdminGrievanceDetail />} />
       </Routes>
     </BrowserRouter>
   );
