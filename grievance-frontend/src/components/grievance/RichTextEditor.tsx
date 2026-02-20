@@ -1,5 +1,3 @@
-// src/components/grievance/form-sections/RichTextEditor.tsx
-
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -57,17 +55,16 @@ export default function DescriptionEditor({ description, onDescriptionChange }: 
       Placeholder.configure({ placeholder: 'Provide detailed description...' }),
       CharacterCount.configure({ limit: CHAR_LIMIT }),
     ],
-    content: description, // Load initial content
+    content: description, 
     onUpdate: ({ editor }) => {
-      onDescriptionChange(editor.getHTML()); // Send HTML back to parent
+      onDescriptionChange(editor.getHTML()); 
     },
   });
 
-  // Sync external changes if needed (optional)
+
   useEffect(() => {
     if (editor && description !== editor.getHTML()) {
-      // Only update if content is different to avoid cursor jumping
-      // editor.commands.setContent(description); 
+      // 
     }
   }, [description, editor]);
 

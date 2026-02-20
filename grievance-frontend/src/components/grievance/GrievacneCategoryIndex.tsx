@@ -26,7 +26,7 @@ export default function GrievanceCategoryChart() {
 
         const result = await response.json();
 
-        // Assuming your API returns an array of { category, total }
+
         if (result.status === 'ok') {
           setRows(result.data);
         }

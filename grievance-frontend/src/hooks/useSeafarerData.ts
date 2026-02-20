@@ -6,7 +6,7 @@ export function useSeafarerData(indosNumber: string) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Basic validation to prevent unnecessary API calls
+
     if (indosNumber.length < 4) {
       setData(null);
       return;
@@ -16,11 +16,10 @@ export function useSeafarerData(indosNumber: string) {
       try {
         setLoading(true);
         
-        // 1. Get the JWT token for authentication
+
         const token = localStorage.getItem('accessToken');
 
-        // 2. Fetch seafarer details from your Node.js endpoint
-        // Note: You will need to create this route on your backend later
+
         const response = await fetch(`${API_BASE_URL}/seafarers/${indosNumber}`, {
           method: 'GET',
           headers: {

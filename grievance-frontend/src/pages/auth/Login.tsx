@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { API_BASE_URL } from "../../config/api"; // Centralized config
+import { API_BASE_URL } from "../../config/api"; 
 
 export default function Login() {
   const navigate = useNavigate();

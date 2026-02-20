@@ -16,7 +16,7 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
   }
 
   try {
-    // ✅ FIXED: Join with portal_roles to get role_key
+
     const [rows]: any = await pool.query(
       `SELECT 
         a.account_id, 
@@ -39,7 +39,7 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
 
     const user = rows[0];
 
-    // Split name for frontend convenience
+
     const nameParts = (user.full_name || '').split(' ');
     const firstName = nameParts[0] || '';
     const lastName = nameParts.slice(1).join(' ') || '';

@@ -7,10 +7,10 @@ export default function Navbar() {
   const { toggle } = useSidebar();
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout } = useGovernance(); // Assuming you have logout in context
+  const { logout } = useGovernance(); 
 
   const handleLogout = () => {
-    // Call context logout if available
+
     if (logout) logout();
     
     // Clear storage

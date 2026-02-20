@@ -5,6 +5,9 @@ import { verifyToken } from '../middleware/auth.middleware.js';
 import { getMyGrievances, submitGrievance, getGrievanceById, submitGrievanceWithFiles, trackGrievance, getAllGrievancesAdmin, updateGrievanceStatus} from '../controllers/grievance.controller.js';
 import { getAllCategories, getSubcategories } from '../controllers/category.controller.js';
 import { uploadGrievanceFiles } from '../middleware/upload.middleware.js';
+import { getGrievanceByIdAdmin, getGrievanceHistory } from '../controllers/grievance.controller.js';
+
+
 
 
 const router = Router();
@@ -22,13 +25,16 @@ router.get('/subcategories/:categoryId', getSubcategories);
 router.get('/grievances/track/:reference', verifyToken, trackGrievance); 
 
 
+
 router.get('/admin/grievances', verifyToken, getAllGrievancesAdmin);
+router.get('/admin/grievances/:id', verifyToken, getGrievanceByIdAdmin)
 router.put('/admin/grievances/:id/status', verifyToken, updateGrievanceStatus);
 
 router.post('/grievances', verifyToken, submitGrievance);
 router.get('/my-grievances', verifyToken, getMyGrievances);
-router.get('/grievance/track/:reference', verifyToken, getMyGrievances);
+router.get('/grievances/track/:reference', verifyToken, getMyGrievances);
 router.get('/grievances/:id', verifyToken, getGrievanceById);
+router.get('/admin/grievances/:id/history', verifyToken, getGrievanceHistory);
 router.post('/grievances', verifyToken, submitGrievance);  
 router.post('/grievances/upload', verifyToken, uploadGrievanceFiles.array('files', 5), submitGrievanceWithFiles );
 

@@ -90,11 +90,11 @@ export const verifyOtp = async (req: Request, res: Response) => {
       { expiresIn: "7d" }
     );
 
-    // Step 4: Delete used OTP
+    // Delete used OTP
     console.log("Step 4: Deleting used OTP...");
     await pool.query("DELETE FROM temp_otps WHERE email = ?", [email]);
 
-    // Step 5: Store refresh token
+    // Store refresh token
     console.log("Step 5: Storing refresh token...");
     await pool.query(
       "INSERT INTO refresh_tokens (account_id, token, expires_at) VALUES (?, ?, ?)",
@@ -147,7 +147,7 @@ export const resendOtp = async (req: Request, res: Response) => {
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 10 * 60000); // 10 mins expiry
+    const expiresAt = new Date(Date.now() + 10 * 60000); 
 
     await saveOtpToDb(email, otp, expiresAt);
     await sendOtpEmail(email, otp);

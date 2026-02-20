@@ -36,7 +36,7 @@ export const GovernanceProvider = ({ children }: { children: React.ReactNode }) 
   const [user, setUser] = useState<UserState>(defaultUser);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // ✅ 1. Load user from localStorage on mount
+
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
@@ -63,7 +63,7 @@ export const GovernanceProvider = ({ children }: { children: React.ReactNode }) 
     }
   }, []);
 
-  // ✅ Helper to map DB roles to ActorGroups
+
   const mapUserTypeToActorGroup = (code: string): ActorGroup => {
     const mapping: Record<string, ActorGroup> = {
       'SEAFARER': 'SEAFARER',
@@ -75,7 +75,7 @@ export const GovernanceProvider = ({ children }: { children: React.ReactNode }) 
     return mapping[code] || 'SEAFARER';
   };
 
-  // ✅ 2. Set user after login
+
   const setUserFromLogin = (userData: any) => {
     console.log('Setting user from login:', userData);
     
@@ -92,11 +92,11 @@ export const GovernanceProvider = ({ children }: { children: React.ReactNode }) 
     setUser(newUser);
     setIsAuthenticated(true);
     
-    // Save to storage
+
     localStorage.setItem('user', JSON.stringify(userData));
   };
 
-  // ✅ 3. Logout
+
   const logout = () => {
     setUser(defaultUser);
     setIsAuthenticated(false);
@@ -106,7 +106,7 @@ export const GovernanceProvider = ({ children }: { children: React.ReactNode }) 
     localStorage.removeItem('refreshToken');
   };
 
-  // ✅ 4. Switch Group (Dev/Demo Mode)
+
   const switchActorGroup = (group: ActorGroup) => {
     const roleMap: Record<ActorGroup, string[]> = {
       'DGS_OFFICER': ['REVIEWER', 'PROCESSOR'],
@@ -118,7 +118,7 @@ export const GovernanceProvider = ({ children }: { children: React.ReactNode }) 
 
     setUser(prev => ({
       ...prev,
-      name: group === 'DGS_OFFICER' ? "Officer Smith" : prev.name, // Only change name for demo switch
+      name: group === 'DGS_OFFICER' ? "Officer Smith" : prev.name, 
       actorGroup: group,
       roles: roleMap[group],
     }));

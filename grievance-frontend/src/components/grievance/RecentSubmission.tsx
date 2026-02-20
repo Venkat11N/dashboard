@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Clock, CheckCircle2, AlertCircle, ArrowRight, Loader2, FileText, RefreshCw } from "lucide-react";
 
-// ✅ Direct API call - no service file
+
 const API_URL = 'http://localhost:5000/api';
 
 export default function RecentSubmissions() {
@@ -66,7 +66,7 @@ export default function RecentSubmissions() {
   useEffect(() => {
     fetchRecent();
     
-    // Listen for new submissions
+
     const handleRefresh = () => fetchRecent();
     window.addEventListener('grievanceSubmitted', handleRefresh);
     return () => window.removeEventListener('grievanceSubmitted', handleRefresh);
@@ -123,7 +123,7 @@ export default function RecentSubmissions() {
         </div>
       </div>
 
-      {/* ✅ Debug Info - Remove after fixing */}
+   
       <div className="p-2 bg-yellow-50 text-xs text-yellow-800">
         Debug: {debugInfo} | Items: {submissions.length}
       </div>

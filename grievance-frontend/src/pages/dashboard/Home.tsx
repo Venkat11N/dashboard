@@ -11,7 +11,7 @@ export default function Home() {
   const navigate = useNavigate();
   const { user } = useGovernance();
 
-  // Quick Actions Configuration
+
   const quickActions = [
     {
       label: 'Track Status',
@@ -41,7 +41,7 @@ export default function Home() {
                 Good {new Date().getHours() < 12 ? "Morning" : new Date().getHours() < 18 ? "Afternoon" : "Evening"}, {user.name?.split(" ")[0] || 'User'}!
               </h1>
               <p className="text-lg opacity-90 mb-8 max-w-2xl">
-                Your centralized hub for maritime grievance management and resolution tracking.
+                Your centralized hub for grievance management and resolution tracking.
               </p>
               <button
                 onClick={() => navigate('/dashboard/grievances/new')}
@@ -70,7 +70,7 @@ export default function Home() {
                   {quickActions.map((action, idx) => (
                     <button
                       key={idx}
-                      onClick={() => navigate(action.path)} // ✅ Use navigate() here
+                      onClick={() => navigate(action.path)} 
                       className="w-full text-left px-4 py-3 rounded-xl hover:bg-slate-50 transition-colors flex items-center justify-between group"
                     >
                       <div className="flex items-center gap-3">

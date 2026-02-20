@@ -25,7 +25,7 @@ export default function GrievanceTable({ limit }: GrievanceTableProps) {
   const fetchGrievances = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const data = await getMyGrievances(limit);
       setGrievances(data);
@@ -169,13 +169,6 @@ export default function GrievanceTable({ limit }: GrievanceTableProps) {
         <p className="text-sm text-slate-500 mb-6 max-w-sm">
           You haven't submitted any grievances. Click below to file your first complaint.
         </p>
-        {/* <button
-          onClick={() => navigate('/dashboard/grievances/new')}
-          className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors"
-        >
-          <FileText size={18} />
-          Submit New Grievance
-        </button> */}
       </div>
     );
   }

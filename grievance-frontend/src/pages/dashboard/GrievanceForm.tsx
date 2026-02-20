@@ -21,9 +21,7 @@ const MIN_DESCRIPTION_LENGTH = 10;
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 
-// ==========================================
-// 1. COMPONENT: RICH TEXT MENU BAR
-// ==========================================
+
 const MenuBar = ({ editor }: { editor: any }) => {
   if (!editor) return null;
 
@@ -73,9 +71,7 @@ const MenuBar = ({ editor }: { editor: any }) => {
   );
 };
 
-// ==========================================
-// 2. COMPONENT: SEARCHABLE DROPDOWN
-// ==========================================
+
 type SearchableDropdownProps = {
   items: { id?: number; category_id?: number; subcategory_id?: number; name: string }[];
   selectedItem: any;
@@ -195,9 +191,7 @@ const SearchableDropdown = ({
   );
 };
 
-// ==========================================
-// 3. COMPONENT: FILE DROP ZONE
-// ==========================================
+
 const FileDropZone = ({ files, onFilesAdd, onFileRemove }: { files: File[], onFilesAdd: (files: File[]) => void, onFileRemove: (index: number) => void }) => {
   const [isDragging, setIsDragging] = useState(false);
 
@@ -272,9 +266,6 @@ const FileDropZone = ({ files, onFilesAdd, onFileRemove }: { files: File[], onFi
   );
 };
 
-// ==========================================
-// 4. MAIN FORM COMPONENT
-// ==========================================
 
 export default function GrievanceForm() {
   const navigate = useNavigate();
@@ -305,7 +296,7 @@ export default function GrievanceForm() {
     onUpdate: ({ editor }) => setDescriptionLength(editor.getText().trim().length),
   });
 
-  // ✅ INITIAL DATA FETCH (Profile & Categories)
+
   useEffect(() => {
     const initData = async () => {
       const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
@@ -314,13 +305,13 @@ export default function GrievanceForm() {
       const authHeader = { headers: { Authorization: `Bearer ${token}` } };
 
       try {
-        // 1. Get Profile
+
         try {
           const profileRes = await axios.get(`${API_BASE_URL}/profile`, authHeader);
           if (profileRes.data.status === 'ok') setProfile(profileRes.data.user);
         } catch { setProfileError(true); }
 
-        // 2. Get Categories
+
         try {
           const catRes = await getAllCategories();
           setCategories(catRes);
@@ -331,7 +322,6 @@ export default function GrievanceForm() {
     initData();
   }, [navigate]);
 
-  // ✅ FETCH SUBCATEGORIES
   useEffect(() => {
     if (!selectedCategory) { setSubcategories([]); return; }
     
@@ -339,7 +329,7 @@ export default function GrievanceForm() {
     async function fetchSubs() {
       setSubLoading(true);
       try {
-        // Handle ID mismatch (id vs category_id)
+       
         const catId = selectedCategory.id || selectedCategory.category_id;
         const subs = await getSubcategories(catId);
         if (isMounted) {
@@ -353,7 +343,7 @@ export default function GrievanceForm() {
     return () => { isMounted = false; };
   }, [selectedCategory]);
 
-  // HANDLERS
+
   const handleCategorySelect = (cat: Category | null) => {
     setSelectedCategory(cat);
     setSelectedSubcategory(null);
@@ -369,7 +359,7 @@ export default function GrievanceForm() {
 
   const isFormValid = !!profile && !!selectedCategory && !!selectedSubcategory && descriptionLength >= MIN_DESCRIPTION_LENGTH;
 
-  // ✅ FINAL SUBMIT HANDLER
+
   const handleFinalSubmit = async () => {
     if (!isFormValid) return;
     setLoading(true); setShowConfirm(false);
@@ -382,27 +372,27 @@ export default function GrievanceForm() {
         return;
       }
 
-      // 🔍 FIX: Ensure we send plain ID numbers, not objects or NaN
+
       const categoryId = selectedCategory.id || selectedCategory.category_id;
       const subcategoryId = selectedSubcategory.id || selectedSubcategory.subcategory_id;
 
-      // Logic check
+
       if(!categoryId || !subcategoryId) {
         throw new Error("Invalid Category or Subcategory Selection");
       }
 
       let response;
 
-      // ✅ Use HTML for rich text
+
       const desc = editor?.getHTML() || '';
 
       if (files.length > 0) {
-        // 📁 Upload WITH files (FormData)
+
         const formData = new FormData();
         formData.append('indos_number', profile.indos_number || 'N/A');
         formData.append('first_name', profile.first_name || '');
         formData.append('last_name', profile.last_name || '');
-        // Convert numbers to string for FormData
+
         formData.append('category_id', String(categoryId));
         formData.append('subcategory_id', String(subcategoryId));
         formData.append('description', desc);
@@ -413,13 +403,13 @@ export default function GrievanceForm() {
           headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
         });
       } else {
-        // 📄 Upload WITHOUT files (JSON)
+
         const payload = {
           indos_number: profile.indos_number || 'N/A',
           first_name: profile.first_name || '',
           last_name: profile.last_name || '',
-          category_id: categoryId,     // Send as number
-          subcategory_id: subcategoryId, // Send as number
+          category_id: categoryId,     
+          subcategory_id: subcategoryId, 
           description: desc,
           priority: 'MEDIUM'
         };

@@ -1,5 +1,5 @@
 import { MessageSquare, AlertTriangle, FileText, Clock, CheckCircle, Search } from 'lucide-react';
-import { useGovernance } from '../../core/GovernanceContext'; //
+import { useGovernance } from '../../core/GovernanceContext'; 
 
 const colorStyles: Record<string, { bg: string; text: string; hex: string }> = {
   blue: { bg: "bg-blue-50", text: "text-blue-600", hex: "#3b82f6" },

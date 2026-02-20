@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import AdminLayout from "../../components/layout/AdminLayout";
-import { Users, FileText, CheckCircle, Clock, Eye } from "lucide-react"; 
+import { Users, FileText, CheckCircle, Clock, Eye, CrossIcon, LucideCross, Cross, Ban } from "lucide-react"; 
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
@@ -8,15 +8,15 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const [stats, setStats] = useState({ total: 0, pending: 0, resolved: 0 });
-  const [recentGrievances, setRecentGrievances] = useState([]); // ✅ New state for list
+  const [stats, setStats] = useState({ total: 0, pending: 0, resolved: 0 , rejected: 0});
+  const [recentGrievances, setRecentGrievances] = useState([]); 
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const token = localStorage.getItem('token');
         
-        // Fetch ALL grievances (limit 100 for stats)
+   
         const res = await axios.get(`${API_BASE_URL}/admin/grievances?limit=100`, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -24,17 +24,18 @@ export default function AdminDashboard() {
         if (res.data.status === 'ok') {
           const data = res.data.data;
           
-          // 1. Calculate Stats
+
           setStats({
             total: data.length,
             pending: data.filter((g: any) => g.status === 'SUBMITTED' || g.status === 'IN_PROGRESS').length,
-            resolved: data.filter((g: any) => g.status === 'RESOLVED').length
+            resolved: data.filter((g: any) => g.status === 'RESOLVED').length,
+            rejected: data.filter((g: any) => g.status === 'REJECTED').length
           });
 
-          // 2. Set Recent Pending Items (Action Required)
+
           const pendingItems = data
-            .filter((g: any) => g.status === 'SUBMITTED' || g.status === 'IN_PROGRESS')
-            .slice(0, 5); // Take top 5
+            .filter((g: any) => g.status === 'SUBMITTED' || g.status === 'IN_PROGRESS' || g.status === 'REJECTED')
+            .slice(0, 5); 
             
           setRecentGrievances(pendingItems);
         }
@@ -65,6 +66,7 @@ export default function AdminDashboard() {
           <StatCard title="Total Grievances" value={stats.total} icon={FileText} color="text-blue-600" bg="bg-blue-50" />
           <StatCard title="Pending Action" value={stats.pending} icon={Clock} color="text-amber-600" bg="bg-amber-50" />
           <StatCard title="Resolved" value={stats.resolved} icon={CheckCircle} color="text-green-600" bg="bg-green-50" />
+          <StatCard title="Rejected" value={stats.rejected} icon={Ban} color="text-red-600" bg="bg-red-50" />
         </div>
 
         {/* Action Required List */}

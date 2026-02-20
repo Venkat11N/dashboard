@@ -345,28 +345,28 @@ export const trackGrievance = async (req: AuthRequest, res: Response) => {
   console.log("\n🔍 === DIAGNOSTIC MODE ===");
   
   try {
-    // 1. Check 'grievances' table columns
+
     const [gCols]: any = await pool.query("SHOW COLUMNS FROM grievances");
     const gColNames = gCols.map((c: any) => c.Field);
     console.log("📊 Grievances Table Columns:", gColNames);
 
-    // 2. Check 'grievance_categories' table columns
+
     const [cCols]: any = await pool.query("SHOW COLUMNS FROM grievance_categories");
     const cColNames = cCols.map((c: any) => c.Field);
     console.log("📊 Categories Table Columns:", cColNames);
 
-    // 3. Check 'grievance_subcategories' table columns
+
     const [sCols]: any = await pool.query("SHOW COLUMNS FROM grievance_subcategories");
     const sColNames = sCols.map((c: any) => c.Field);
     console.log("📊 Subcategories Table Columns:", sColNames);
 
-    // 4. Determine correct ID column names based on DB reality
+
     const catIdCol = cColNames.includes('category_id') ? 'category_id' : 'id';
     const subIdCol = sColNames.includes('subcategory_id') ? 'subcategory_id' : 'id';
     
     console.log(`💡 Detected ID columns: Category=[${catIdCol}], Subcategory=[${subIdCol}]`);
 
-    // 5. Build query dynamically using the correct columns
+  
     const query = `
       SELECT 
         g.*, 
@@ -494,22 +494,122 @@ export const getAllGrievancesAdmin = async (req: AuthRequest, res: Response) => 
   }
 };
 
+export const getGrievanceByIdAdmin = async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+
+  console.log("=== ADMIN GET DETAIL ===");
+  console.log("ID:", id);
+
+  try {
+    const [rows]: any = await pool.query(
+      `SELECT
+       g.*,
+       c.name AS category_name,
+       s.name AS subcategory_name,
+       a.full_name AS applicant_name,
+       a.contact_no AS applicant_phone,
+       a.contact_no,
+       a.indos_number,
+       a.cdc_number
+      FROM grievances g
+      LEFT JOIN grievance_categories c ON g.category_id = c.category_id
+      LEFT JOIN grievance_subcategories s ON g.subcategory_id = s.subcategory_id
+      LEFT JOIN account_holders a ON g.account_id = a.account_id
+      WHERE g.grievance_id = ?`,
+      [id]
+    );
+
+    if(rows.length === 0) {
+      return res.status(404).json({ status: "error", message: "Grievance not found"})
+    }
+
+    const [files]: any = await pool.query(
+      `SELECT * FROM grievance_files WHERE grievance_id = ?`,
+      [id]
+    );
+
+    res.json({
+      status: "ok",
+      data: {...rows[0], files}
+    });
+  } catch (error: any) {
+    console.error("Admin Detail Error:", error);
+    res.status(500).json({ status: "error", message: "Failed to fetch grievance"});
+  }
+};
+
 export const updateGrievanceStatus = async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   const { status, remarks } = req.body;
+  const adminId = req.user?.userId;
 
   if (!status) {
     return res.status(400).json({ status: "error", message: "Status is required"});
   }
+  if(!adminId) return res.status(401).json({ status: "error", message: "Unauthorized"});
+
+  const connection = await pool.getConnection();
 
   try {
-    await pool.query(
-      "UPDATE grievacnes SET status = ?, updated_at = NOW() WHERE grievance_id = ?",
-      [status ,id]
+    const [current]: any = await connection.query(
+      "SELECT status FROM grievances WHERE grievance_id = ?",
+      [id]
     );
-    res.json({ status: "ok", message: "Status updated successfully" });
+
+    if (current.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ status: "error", message: "Grievance not found"});
+    }
+
+    const previous_status = current[0].status;
+
+    await connection.query(
+      "UPDATE grievances SET status = ?, updated_at = NOW() WHERE grievance_id = ?",
+      [status, id]
+    );
+
+    await connection.query(
+      `INSERT INTO grievance_history
+      (grievance_id, action_by, previous_status, new_status, remarks)
+      VALUES (?,?,?,?,?)`,
+      [id, adminId, previous_status, status, remarks || 'Status updated']
+    );
+
+    await connection.commit();
+    res.json({ status: "ok", message: "Status updated successfully"});
   } catch (error: any) {
+    await connection.rollback();
     console.error("Update Error:", error);
-    res.status(500).json({ status: "error", message: "Failed to update status"})
+    res.status(500).json({ status: "error", message: "Failed to update status"});
+  } finally {
+    connection.release();
+  }
+}
+
+  export const getGrievanceHistory = async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+
+    try {
+      const [row]: any = await pool.query(
+        `
+        SELECT
+        h.history_id,
+        h.previous_status,
+        h.new_status,
+        h.remarks,
+        h.created_at,
+        a.full_name AS action_by_name,
+        r.role_key AS action_by_role
+      FROM grievance_history h
+      LEFT JOIN account_holders a ON h.action_by = a.account_id
+      LEFT JOIN portal_roles r ON a.role_id = r.role_id
+      WHERE h.grievance_id = ?
+      ORDER BY h.created_at DESC`,
+      [id]
+    );
+    res.json({ status: "ok", data: rows});
+  } catch (error: any) {
+    console.error("Histroy Fetch Error:", error);
+    res.status(500).json({ status: "error", message: "Failed to fetch history"});
   }
 };
