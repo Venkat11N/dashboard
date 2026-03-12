@@ -5,6 +5,7 @@
   "main": "src/server.ts",
 "scripts": {
   "build": "tsc || true",
+  
   "start": "node dist/server.js",
   "dev": "nodemon src/server.ts"
 },
