@@ -5,6 +5,11 @@ WORKDIR /app
 
 # Copy package files first
 COPY grievance-backend/package*.json ./
+RUN cd grievance-backend && npm install
+
+# frontend
+COPY grievance-frontend/package*.json ./frontend/
+RUN cd grievance-frontend && npm install
 
 # Install dependencies
 RUN npm install
