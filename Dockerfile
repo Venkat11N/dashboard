@@ -1,5 +1,6 @@
 FROM node:22-alpine
 
+# Set the working directory
 WORKDIR /app
 
 # Copy backend
@@ -14,11 +15,14 @@ COPY grievance-frontend ./grievance-frontend
 # Install frontend dependencies
 RUN cd grievance-frontend && npm install
 
-# Build frontend
-RUN cd grievance-frontend && npm run build
+# Install dependencies
+RUN npm install
 
-# Expose backend port
+# Copy the rest of the frontend code
+COPY . .
+
+# Expose Vite's default port
 EXPOSE 3000
 
-# Start backend server
-CMD ["node", "grievance-backend/server.js"]
+# Start the Vite development server
+CMD ["npm", "run", "dev", "--", "--host"]
