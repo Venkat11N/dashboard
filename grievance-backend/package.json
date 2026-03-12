@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "main": "src/server.ts",
-  "scripts": {
-    "dev": "nodemon"
-  },
+"scripts": {
+  "dev": "nodemon src/server.ts",
+  "start": "tsx src/server.ts"
+},
   "keywords": [],
   "author": "",
   "license": "ISC",

@@ -25,4 +25,4 @@ COPY . .
 EXPOSE 3000
 
 # Start the Vite development server
-CMD ["npm", "run", "dev", "--", "--host"]
+CMD ["npm", "run", "dev", "--", "tsx", "grievance-backend/src/server.ts"]
