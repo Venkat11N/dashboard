@@ -1,5 +1,7 @@
+version: "3.9"
+
 services:
-  # --- DATABASE ---
+
   db:
     image: mysql:8.0
     container_name: maritime_mysql
@@ -12,45 +14,39 @@ services:
     volumes:
       - ./mysql_data:/var/lib/mysql
 
-  # --- BACKEND ---
   backend:
-    build: ./grievance-backend 
+    build: ./grievance-backend
     container_name: maritime_backend
     volumes:
       - ./grievance-backend:/app
       - /app/node_modules
     ports:
-      - "5000:5000"
+      - "5000:3000"
     command: npm run dev
-
     environment:
-      - DB_HOST=db
-      - DB_USER=root
-      - DB_PASSWORD=root
-      - DB_NAME=maritime_portal
-      - DB_PORT=3306
-      - JWT_SECRET=maritime_secret_key_2026
+      DB_HOST: db
+      DB_USER: root
+      DB_PASSWORD: root
+      DB_NAME: maritime_portal
+      DB_PORT: 3306
+      JWT_SECRET: maritime_secret_key_2026
     depends_on:
       - db
 
-  # --- FRONTEND (React) ---
   frontend:
-    build: ./grievance-frontend 
+    build: ./grievance-frontend
     container_name: maritime_frontend
     volumes:
       - ./grievance-frontend:/app
       - /app/node_modules
-
     ports:
       - "5173:5173"
-
     command: npm run dev
     environment:
-      - VITE_API_URL=http://localhost:5000/api
+      VITE_API_URL: http://backend:5000/api
     depends_on:
       - backend
 
-  # --- TOOLS ---
   phpmyadmin:
     image: phpmyadmin:latest
     container_name: maritime_phpmyadmin
@@ -61,5 +57,3 @@ services:
       PMA_HOST: db
       PMA_USER: root
       PMA_PASSWORD: root
-
-
