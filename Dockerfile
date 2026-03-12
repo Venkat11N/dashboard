@@ -8,7 +8,7 @@ RUN npm install
 
 # Copy the rest of the frontend code and build
 COPY grievance-frontend/ ./
-RUN npm run build
+RUN npx vite build
 
 # Stage 2: Prepare the backend application
 FROM node:22-alpine AS backend-builder
