@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import http, { type Server } from 'http';
 import app from './index.js';
 import config from './config/index.js';
@@ -7,6 +10,11 @@ const server: Server = http.createServer(app);
 
 async function start() {
   try {
+    console.log('[ server ] Checking environment variables...');
+    console.log(`[ server ] DB_HOST: ${process.env.DB_HOST || 'Not set (will default to localhost)'}`);
+    console.log(`[ server ] DB_USER: ${process.env.DB_USER || 'Not set'}`);
+    console.log(`[ server ] DB_NAME: ${process.env.DB_NAME || 'Not set'}`);
+
     await DatabaseConnection();
 
     const PORT = process.env.PORT || config.server.port || 3000;
