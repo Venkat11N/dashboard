@@ -1,5 +1,6 @@
-import dotenv from 'dotenv';
-dotenv.config();
+if (process.env.NODE_ENV !== 'production') {
+  (await import('dotenv')).config();
+}
 
 import http, { type Server } from 'http';
 import app from './index.js';
