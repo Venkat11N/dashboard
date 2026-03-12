@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { getAllCategories, type Category } from "../../services/categoryService";
+import { getAllCategories, type Category } from "../../services/CategoryService";
 import { Search, ChevronDown } from "lucide-react";
 
 export default function CategorySearch({ onSelect }: { onSelect: (cat: Category) => void }) {
