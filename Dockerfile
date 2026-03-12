@@ -3,17 +3,18 @@ FROM node:22-alpine
 # Set the working directory
 WORKDIR /app
 
-# Copy backend package files
-COPY grievance-backend/package*.json ./grievance-backend/
+# Copy backend
+COPY grievance-backend ./grievance-backend
 
 # Install backend dependencies
 RUN cd grievance-backend && npm install
 
-# Copy rest of backend code
-COPY grievance-backend ./grievance-backend
-
 # Copy frontend
 COPY grievance-frontend ./grievance-frontend
+
+# Install frontend dependencies
+RUN cd grievance-frontend && npm install
+
 # Install dependencies
 RUN npm install
 
