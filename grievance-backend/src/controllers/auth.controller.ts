@@ -170,7 +170,7 @@ export const refreshAccessToken = async (req: Request, res: Response) => {
   }
 
   try {
-    const decoded: any = jwt.verify(token, config.jwtRefreshSecret || config.jwtSecret);
+    const decoded: any = jwt.verify(token, (config as any).jwtRefreshSecret || config.jwtSecret);
 
     // Verify token exists in DB and is valid
     const [rows]: any = await pool.query(

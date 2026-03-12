@@ -1,8 +1,8 @@
-import { type Response } from 'express';
+import { type Request, type Response } from 'express';
 import { pool } from '../db/connections.js';
 
 
-interface AuthRequest {
+interface AuthRequest extends Request {
   user?: {
     userId: number;
     email?: string;
@@ -10,7 +10,7 @@ interface AuthRequest {
   body: any;
   params: any;
   query: any;
-  files?: Express.Multer.File[];
+  files?: Express.Multer.File[] | { [fieldname: string]: Express.Multer.File[] } | undefined;
 }
 
 
@@ -609,7 +609,7 @@ export const updateGrievanceStatus = async (req: AuthRequest, res: Response) => 
     const { id } = req.params;
 
     try {
-      const [row]: any = await pool.query(
+      const [rows]: any = await pool.query(
         `
         SELECT
         h.history_id,
