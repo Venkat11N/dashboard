@@ -494,6 +494,24 @@ export const getAllGrievancesAdmin = async (req: AuthRequest, res: Response) => 
   }
 };
 
+export const getGrievanceStats = async (req: AuthRequest, res: Response) => {
+  try {
+    const [rows]: any = await pool.query(`
+      SELECT 
+        COUNT(*) as total,
+        SUM(CASE WHEN status IN ('SUBMITTED', 'IN_PROGRESS') THEN 1 ELSE 0 END) as pending,
+        SUM(CASE WHEN status = 'RESOLVED' THEN 1 ELSE 0 END) as resolved
+      FROM grievances
+    `);
+
+    res.json({ status: "ok", data: rows[0] });
+  } catch (error: any) {
+    console.error("Stats Error:", error);
+    res.status(500).json({ status: "error", message: "Failed to fetch stats" });
+  }
+};
+
+
 export const getGrievanceByIdAdmin = async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
 
@@ -585,6 +603,7 @@ export const updateGrievanceStatus = async (req: AuthRequest, res: Response) => 
     connection.release();
   }
 }
+
 
   export const getGrievanceHistory = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;

@@ -6,6 +6,7 @@ import { getMyGrievances, submitGrievance, getGrievanceById, submitGrievanceWith
 import { getAllCategories, getSubcategories } from '../controllers/category.controller.js';
 import { uploadGrievanceFiles } from '../middleware/upload.middleware.js';
 import { getGrievanceByIdAdmin, getGrievanceHistory } from '../controllers/grievance.controller.js';
+import { getGrievanceStats } from '../controllers/grievance.controller.js';
 
 
 
@@ -35,6 +36,7 @@ router.get('/my-grievances', verifyToken, getMyGrievances);
 router.get('/grievances/track/:reference', verifyToken, getMyGrievances);
 router.get('/grievances/:id', verifyToken, getGrievanceById);
 router.get('/admin/grievances/:id/history', verifyToken, getGrievanceHistory);
+router.get('/admin/stats', verifyToken, getGrievanceStats);
 router.post('/grievances', verifyToken, submitGrievance);  
 router.post('/grievances/upload', verifyToken, uploadGrievanceFiles.array('files', 5), submitGrievanceWithFiles );
 
