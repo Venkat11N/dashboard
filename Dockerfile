@@ -4,7 +4,7 @@ FROM node:22-alpine
 WORKDIR /app
 
 # Copy package files first
-COPY package*.json ./
+COPY grievance-backend/package*.json ./
 
 # Install dependencies
 RUN npm install
