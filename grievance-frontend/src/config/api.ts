@@ -1,1 +1,1 @@
-export const API_BASE_URL = 'http://localhost:5000/api';
+export const API_BASE_URL = 'https://dashboard-production-a92e.up.railway.app/api';

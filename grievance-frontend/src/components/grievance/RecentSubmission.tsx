@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Clock, CheckCircle2, AlertCircle, ArrowRight, Loader2, FileText, RefreshCw } from "lucide-react";
 
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'https://dashboard-production-a92e.up.railway.app/api';
 
 export default function RecentSubmissions() {
   const navigate = useNavigate();
