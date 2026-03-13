@@ -10,9 +10,8 @@ import { DatabaseConnection } from './db/connections.js';
 const server: Server = http.createServer(app);
 
 async function start() {
-  const PORT = Number(process.env.PORT) || config.server.port || 3000;
+  const PORT: number = Number(process.env.PORT) || Number(config.server.port) || 3000;
 
-  // 1. Start the server first so Railway sees a "Live" app (Prevents 502)
   server.listen(PORT, "0.0.0.0", () => {
     console.log(`[ server ] running on port ${PORT}`);
   });
