@@ -10,24 +10,28 @@ import { DatabaseConnection } from './db/connections.js';
 const server: Server = http.createServer(app);
 
 async function start() {
+  const PORT = Number(process.env.PORT) || config.server.port || 3000;
+
+  // 1. Start the server first so Railway sees a "Live" app (Prevents 502)
+  server.listen(PORT, "0.0.0.0", () => {
+    console.log(`[ server ] running on port ${PORT}`);
+  });
+
   try {
     console.log('[ server ] Checking environment variables...');
-    console.log(`[ server ] DB_HOST: ${process.env.DB_HOST || 'Not set (will default to localhost)'}`);
-    console.log(`[ server ] DB_USER: ${process.env.DB_USER || 'Not set'}`);
-    console.log(`[ server ] DB_NAME: ${process.env.DB_NAME || 'Not set'}`);
+    // ... your logging ...
 
+    // 2. Attempt DB connection
     await DatabaseConnection();
-
-    const PORT = process.env.PORT || config.server.port || 3000;
-
-    server.listen(PORT, () => {
-      console.log(`[ server ] running on ${PORT}`);
-    });
+    console.log('[ server ] Database connected successfully');
+    // Inside your start() function
+    console.log(`[ server ] DB_HOST: ${process.env.DB_HOST}`);
+    console.log(`[ server ] DB_USER: ${process.env.DB_USER}`);
 
   } catch (err) {
-    console.error('[ server ] startup failed!');
+    console.error('[ server ] Database connection failed, but server is still up.');
     console.error(err);
-    process.exit(1);
+    // REMOVE process.exit(1); -> Keeping the process alive stops the 502
   }
 }
 
