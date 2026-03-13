@@ -1,8 +1,33 @@
-mysql_data/
-node_modules/
-.git/
-.env
-dist/
+# dependencies
+node_modules
+*/node_modules
+
+# build outputs
 dist
-build/
+*/dist
+build
+*/build
+
+# git
+.git
+.gitignore
+
+# environment files
+.env
+*.env
+
+# local database
+mysql_data
+
+# logs
+*.log
+
+# docker
+docker-compose.yml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# sockets
 *.sock
