@@ -2,9 +2,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Clock, CheckCircle2, AlertCircle, ArrowRight, Loader2, FileText, RefreshCw } from "lucide-react";
+import { API_BASE_URL } from "../../config/api";
 
-
-const API_URL = 'https://dashboard-production-a92e.up.railway.app/api';
+const API_URL = fetch(`${API_BASE_URL}/grievances`);;
 
 export default function RecentSubmissions() {
   const navigate = useNavigate();

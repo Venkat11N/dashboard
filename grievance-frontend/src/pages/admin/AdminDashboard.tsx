@@ -3,8 +3,9 @@ import AdminLayout from "../../components/layout/AdminLayout";
 import { Users, FileText, CheckCircle, Clock, Eye, CrossIcon, LucideCross, Cross, Ban } from "lucide-react"; 
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "../../config/api";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://dashboard-production-a92e.up.railway.app/api';
+
 
 export default function AdminDashboard() {
   const navigate = useNavigate();

@@ -1,8 +1,8 @@
 import axios from 'axios';
+import { API_BASE_URL } from "../../config/api";
 
 
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://dashboard-production-a92e.up.railway.app/api';
 
 export const getAuthToken = (): string | null => {
   return localStorage.getItem('token') || localStorage.getItem('accessToken');

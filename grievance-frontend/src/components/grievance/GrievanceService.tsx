@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://dashboard-production-a92e.up.railway.app/api';
+
+const API_BASE_URL: string = import.meta.env.VITE_API_URL || "";
 
 export type Grievance = {
   id: number;
